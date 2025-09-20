@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  course    String
+  year      String
+  phone     String?
+  createdAt DateTime @default(now())
+  
+  emailLogs EmailLog[]
+  
+  @@map("students")
+}
+
+// NEW: Guests Table
+model Guest {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  organization String? // Company/Institution name
+  designation String? // Job title/position
+  phone       String?
+  category    String   @default("guest") // guest, vip, alumni, etc.
+  createdAt   DateTime @default(now())
+  
+  emailLogs   EmailLog[]
+  
+  @@map("guests")
+}
+
+// NEW: Professors Table  
+model Professor {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  college     String   // College/University name
+  department  String   // Department name
+  designation String   @default("Professor") // Professor, Dr., Assistant Professor
+  phone       String?
+  expertise   String?  // Subject expertise
+  createdAt   DateTime @default(now())
+  
+  emailLogs   EmailLog[]
+  
+  @@map("professors")
+}
+
+model Invitation {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  subject     String
+  createdAt   DateTime @default(now())
+  sentCount   Int      @default(0)
+  deliveredCount Int   @default(0)
+  openedCount    Int   @default(0)
+  clickedCount   Int   @default(0)
+  failedCount    Int   @default(0)
+  
+  emailLogs EmailLog[]
+  
+  @@map("invitations")
+}
+
+// Enhanced EmailLog for multiple recipient types
+model EmailLog {
+  id           String    @id @default(cuid())
+  studentId    String?   // Optional - for students
+  guestId      String?   // Optional - for guests
+  professorId  String?   // Optional - for professors
+  invitationId String
+  recipientType String   // "student", "guest", "professor"
+  status       String    // sent, delivered, bounced, opened, clicked, failed
+  sentAt       DateTime  @default(now())
+  deliveredAt  DateTime?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  errorMessage String?
+  messageId    String?   
+  
+  student      Student?     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guest        Guest?       @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  professor    Professor?   @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  invitation   Invitation   @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  
+  @@map("email_logs")
+}
