@@ -1,4 +1,3 @@
-// D:\college-invitation-system\next.config.ts
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: { 
@@ -8,14 +7,16 @@ const nextConfig = {
     ignoreBuildErrors: true 
   },
   
-  // Add proper config to skip problematic routes during build
-  experimental: {
-    serverComponentsExternalPackages: ['@sendgrid/mail', 'twilio']
-  },
+  // Updated for Next.js 15
+  serverExternalPackages: ['@sendgrid/mail', 'nodemailer', '@prisma/client'],
   
-  // Skip static optimization for API routes
-  output: 'standalone'
+  // Skip static optimization for problematic pages
+  output: 'standalone',
+  
+  // Disable static generation for dashboard
+  experimental: {
+    missingSuspenseWithCSRBailout: false
+  }
 }
 
 export default nextConfig
-
