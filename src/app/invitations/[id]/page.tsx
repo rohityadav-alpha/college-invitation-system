@@ -1,469 +1,683 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import Navigation from '@/components/Navigation'
-import AdminProtection from '@/components/AdminProtection'
-import { AppIcons } from '@/components/icons/AppIcons'
-import Link from 'next/link'
+"use client";
 
-interface EmailLog {
-  id: string
-  status: string
-  sentAt: string
-  deliveredAt?: string
-  openedAt?: string
-  clickedAt?: string
-  errorMessage?: string
-  messageId?: string
-  recipientType?: string
-  student?: {
-    id: string
-    name: string
-    email: string
-    course: string
-    year: string
-  }
-  guest?: {
-    id: string
-    name: string
-    email: string
-    organization: string
-    designation: string
-  }
-  professor?: {
-    id: string
-    name: string
-    email: string
-    college: string
-    department: string
-  }
-}
-
-interface InvitationDetail {
-  id: string
-  title: string
-  subject: string
-  content: string
-  createdAt: string
-  sentCount: number
-  emailLogs: EmailLog[]
-}
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { AppIcons } from "@/components/icons/AppIcons";
+import { Radio } from "lucide-react";
+import Navigation from "@/components/Navigation";
+import AdminProtection from "@/components/AdminProtection";
 
 export default function InvitationDetailPage() {
-  const params = useParams()
-  const [invitation, setInvitation] = useState<InvitationDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const params = useParams();
+  const [invitation, setInvitation] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [channelFilter, setChannelFilter] = useState("all"); // New filter for channels
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (params.id) {
-      fetchInvitationDetail(params.id as string)
+      fetchInvitation();
     }
-  }, [params.id])
+  }, [params.id]);
 
-  const fetchInvitationDetail = async (id: string) => {
+  const fetchInvitation = async () => {
     try {
-      const response = await fetch(`/api/invitations/${id}`)
-      const data = await response.json()
-      setInvitation(data)
+      const response = await fetch(`/api/invitations/${params.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setInvitation(data);
+      } else {
+        setInvitation(null);
+      }
     } catch (error) {
-      console.error('Error fetching invitation detail:', error)
+      console.error("Error fetching invitation:", error);
+      setInvitation(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  // Safe function to get recipient info
-  const getRecipientInfo = (log: EmailLog) => {
-    // Check for student first (backward compatibility)
+  const retryFailedMessages = async () => {
+    setRetrying(true);
+    try {
+      await fetch(`/api/invitations/${params.id}/retry`, {
+        method: "POST",
+      });
+      fetchInvitation();
+    } catch (error) {
+      console.error("Error retrying messages:", error);
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const getRecipientInfo = (log: any) => {
     if (log.student) {
       return {
         name: log.student.name,
         email: log.student.email,
-        type: 'Student',
+        type: "Student",
         details: `${log.student.course} - ${log.student.year}`,
-        icon: <AppIcons.Students className="h-5 w-5 text-blue-500" />
-      }
+        icon: "S",
+      };
     }
-    
-    // Check for guest
     if (log.guest) {
       return {
         name: log.guest.name,
         email: log.guest.email,
-        type: 'Guest',
+        type: "Guest",
         details: `${log.guest.organization} - ${log.guest.designation}`,
-        icon: <AppIcons.Guests className="h-5 w-5 text-green-500" />
-      }
+        icon: "G",
+      };
     }
-    
-    // Check for professor
     if (log.professor) {
       return {
         name: log.professor.name,
         email: log.professor.email,
-        type: 'Professor',
+        type: "Professor",
         details: `${log.professor.college} - ${log.professor.department}`,
-        icon: <AppIcons.Professors className="h-5 w-5 text-purple-500" />
-      }
+        icon: "P",
+      };
     }
-    
-    // Fallback for old/corrupted records
     return {
-      name: 'Unknown Recipient',
-      email: 'unknown@email.com',
-      type: log.recipientType || 'Student',
-      details: 'No details available',
-      icon: <AppIcons.Calendar className="h-5 w-5 text-gray-500" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered': return 'bg-green-100 text-green-800'
-      case 'opened': return 'bg-blue-100 text-blue-800'
-      case 'clicked': return 'bg-purple-100 text-purple-800'
-      case 'failed': return 'bg-red-100 text-red-800'
-      case 'sent': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
+      name: "Unknown",
+      email: "",
+      type: "Unknown",
+      details: "",
+      icon: "U",
+    };
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'delivered': return <AppIcons.Check className="h-5 w-5 text-green-500" />
-      case 'opened': return <AppIcons.Preview className="h-5 w-5 text-blue-500" />
-      case 'clicked': return <AppIcons.Link className="h-5 w-5 text-purple-500" />
-      case 'failed': return <AppIcons.Close className="h-5 w-5 text-red-500" />
-      case 'sent': return <AppIcons.Send className="h-5 w-5 text-yellow-500" />
-      default: return <AppIcons.Clock className="h-5 w-5 text-gray-500" />
+      case "delivered":
+        return "D";
+      case "opened":
+        return "O";
+      case "read":
+        return "R";
+      case "clicked":
+        return "C";
+      case "failed":
+        return "F";
+      case "sent":
+        return "S";
+      default:
+        return "-";
     }
-  }
+  };
 
-  const filteredLogs = invitation?.emailLogs.filter(log => 
-    filter === 'all' || log.status === filter
-  ) || []
+  const getAllLogs = () => {
+    if (!invitation) return [];
+
+    const emailLogs = (invitation.emailLogs || []).map((log: any) => ({
+      ...log,
+      channel: "email",
+    }));
+    const smsLogs = (invitation.smsLogs || []).map((log: any) => ({
+      ...log,
+      channel: "sms",
+    }));
+    const whatsappLogs = (invitation.whatsappLogs || []).map((log: any) => ({
+      ...log,
+      channel: "whatsapp",
+    }));
+
+    return [...emailLogs, ...smsLogs, ...whatsappLogs];
+  };
+
+  const getFilteredLogs = () => {
+    const allLogs = getAllLogs();
+
+    let filtered = allLogs;
+
+    // Filter by status
+    if (filter !== "all") {
+      filtered = filtered.filter((log) => log.status === filter);
+    }
+
+    // Filter by channel
+    if (channelFilter !== "all") {
+      filtered = filtered.filter((log) => log.channel === channelFilter);
+    }
+
+    return filtered.sort(
+      (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+    );
+  };
+
+  const getStats = () => {
+    const allLogs = getAllLogs();
+
+    return {
+      total: allLogs.length,
+      delivered: allLogs.filter((log) => log.status === "delivered").length,
+      opened: allLogs.filter((log) => ["opened", "read"].includes(log.status))
+        .length,
+      clicked: allLogs.filter((log) => log.status === "clicked").length,
+      failed: allLogs.filter((log) => log.status === "failed").length,
+      pending: allLogs.filter((log) => log.status === "sent").length,
+    };
+  };
+
+  const getRecipientStats = () => {
+    const allLogs = getAllLogs();
+
+    return {
+      students: allLogs.filter((log) => log.student).length,
+      guests: allLogs.filter((log) => log.guest).length,
+      professors: allLogs.filter((log) => log.professor).length,
+    };
+  };
+
+  const getChannelStats = () => {
+    const allLogs = getAllLogs();
+
+    return {
+      email: allLogs.filter((log) => log.channel === "email").length,
+      sms: allLogs.filter((log) => log.channel === "sms").length,
+      whatsapp: allLogs.filter((log) => log.channel === "whatsapp").length,
+    };
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading invitation details...</div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
       </div>
-    )
+    );
   }
 
   if (!invitation) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Invitation Not Found</h3>
-            <p className="text-gray-600 mb-4">The invitation you're looking for doesn't exist.</p>
-            <Link href="/invitations" className="text-blue-600 hover:text-blue-800">
-              ← Back to History
-            </Link>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Invitation Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            The invitation you're looking for doesn't exist.
+          </p>
+          <Link
+            href="/invitations"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+          >
+            ← Back to History
+          </Link>
         </div>
       </div>
-    )
+    );
   }
 
-  const stats = {
-    total: invitation.emailLogs.length,
-    delivered: invitation.emailLogs.filter(log => log.status === 'delivered').length,
-    opened: invitation.emailLogs.filter(log => log.status === 'opened').length,
-    clicked: invitation.emailLogs.filter(log => log.status === 'clicked').length,
-    failed: invitation.emailLogs.filter(log => log.status === 'failed').length,
-    pending: invitation.emailLogs.filter(log => log.status === 'sent').length
-  }
-
-  // Count recipient types
-  const recipientStats = {
-    students: invitation.emailLogs.filter(log => log.student).length,
-    guests: invitation.emailLogs.filter(log => log.guest).length,
-    professors: invitation.emailLogs.filter(log => log.professor).length
-  }
+  const stats = getStats();
+  const recipientStats = getRecipientStats();
+  const channelStats = getChannelStats();
+  const filteredLogs = getFilteredLogs();
 
   return (
     <AdminProtection>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 text-gray-600">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Enhanced Header */}
-          <div className="mb-6 sm:mb-8">
-            <Link
-              href="/invitations"
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm sm:text-base mb-4 bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100 transition-all font-medium"
-          >
-            <AppIcons.ArrowLeft size={16} />
-            <span>Back to History</span>
-          </Link>
-          
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="p-2 sm:p-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg">
-              <AppIcons.Email size={24} className="text-white" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-6 sm:mb-8">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Link
+                href="/invitations"
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg transition-all font-medium"
+              >
+                <AppIcons.ArrowLeft size={16} />
+                <span className="text-sm sm:text-base">Back to History</span>
+              </Link>
+              <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 sm:p-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg">
+                  <AppIcons.Preview size={20} className="text-white" />
+                </div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                  Campaign Details
+                </h1>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">{invitation.title}</h1>
-              <p className="text-base sm:text-lg text-gray-700 mb-3">{invitation.subject}</p>
-              <p className="text-xs sm:text-sm text-gray-500 bg-gray-100 rounded-full px-3 py-1 inline-block">
-                Created: {new Date(invitation.createdAt).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
-          {/* Enhanced Analytics Cards */}
-          <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-br from-white to-gray-50 p-4 sm:p-6 rounded-xl shadow-lg border-2 border-gray-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="p-2 bg-gray-100 rounded-lg mb-3 mx-auto w-fit group-hover:bg-gray-200 transition-colors">
-                <AppIcons.Send size={20} className="text-gray-600" />
+            {stats.failed > 0 && (
+              <button
+                onClick={retryFailedMessages}
+                disabled={retrying}
+                className="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-red-700 hover:to-red-800 disabled:opacity-50 shadow-lg transition-all font-medium flex items-center justify-center gap-2"
+              >
+                {retrying ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Retrying...</span>
+                  </>
+                ) : (
+                  <>
+                    <AppIcons.Refresh size={16} />
+                    <span>Retry {stats.failed} Failed</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Enhanced Invitation Info */}
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl shadow-md flex-shrink-0">
+                <AppIcons.Send size={20} className="text-blue-600" />
               </div>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stats.total}</p>
-              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Sent</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-lg border-2 border-green-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="p-2 bg-green-200 rounded-lg mb-3 mx-auto w-fit group-hover:bg-green-300 transition-colors">
-                <AppIcons.Check size={20} className="text-green-700" />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-3 break-words">
+                  {invitation.subject}
+                </h2>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <AppIcons.Calendar size={16} className="flex-shrink-0" />
+                  <p className="text-sm sm:text-base">
+                    Created: {new Date(invitation.createdAt).toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600 mb-1">{stats.delivered}</p>
-              <p className="text-xs sm:text-sm font-medium text-green-700">Delivered</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-lg border-2 border-blue-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="p-2 bg-blue-200 rounded-lg mb-3 mx-auto w-fit group-hover:bg-blue-300 transition-colors">
-                <AppIcons.Preview size={20} className="text-blue-700" />
-              </div>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-600 mb-1">{stats.opened}</p>
-              <p className="text-xs sm:text-sm font-medium text-blue-700">Opened</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-lg border-2 border-purple-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="p-2 bg-purple-200 rounded-lg mb-3 mx-auto w-fit group-hover:bg-purple-300 transition-colors">
-                <AppIcons.Check size={20} className="text-purple-700" />
-              </div>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-600 mb-1">{stats.clicked}</p>
-              <p className="text-xs sm:text-sm font-medium text-purple-700">Clicked</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-lg border-2 border-red-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="p-2 bg-red-200 rounded-lg mb-3 mx-auto w-fit group-hover:bg-red-300 transition-colors">
-                <AppIcons.Close size={20} className="text-red-700" />
-              </div>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600 mb-1">{stats.failed}</p>
-              <p className="text-xs sm:text-sm font-medium text-red-700">Failed</p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl shadow-lg border-2 border-yellow-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="p-2 bg-yellow-200 rounded-lg mb-3 mx-auto w-fit group-hover:bg-yellow-300 transition-colors">
-                <AppIcons.Clock size={20} className="text-yellow-700" />
-              </div>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-yellow-600 mb-1">{stats.pending}</p>
-              <p className="text-xs sm:text-sm font-medium text-yellow-700">Pending</p>
             </div>
           </div>
 
-          {/* Enhanced Recipient Type Stats */}
-          <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 sm:p-8 rounded-xl shadow-lg border-2 border-blue-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-blue-200 rounded-full group-hover:bg-blue-300 transition-colors">
-                  <AppIcons.Students size={32} className="text-blue-700" />
-                </div>
+          {/* Enhanced Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl sm:rounded-2xl shadow-lg border-2 border-blue-200 p-4 sm:p-6 text-center hover:shadow-xl transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <AppIcons.Send size={20} className="text-blue-600" />
               </div>
-              <p className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{recipientStats.students}</p>
-              <p className="text-sm sm:text-base font-semibold text-blue-700">Students</p>
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">
+                {stats.total}
+              </div>
+              <div className="text-xs sm:text-sm text-blue-700 font-medium">
+                Total Sent
+              </div>
             </div>
-            
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 sm:p-8 rounded-xl shadow-lg border-2 border-green-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-green-200 rounded-full group-hover:bg-green-300 transition-colors">
-                  <AppIcons.Guests size={32} className="text-green-700" />
-                </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl sm:rounded-2xl shadow-lg border-2 border-green-200 p-4 sm:p-6 text-center hover:shadow-xl transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <AppIcons.Check size={20} className="text-green-600" />
               </div>
-              <p className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">{recipientStats.guests}</p>
-              <p className="text-sm sm:text-base font-semibold text-green-700">Guests</p>
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">
+                {stats.delivered}
+              </div>
+              <div className="text-xs sm:text-sm text-green-700 font-medium">
+                Delivered
+              </div>
             </div>
-            
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 sm:p-8 rounded-xl shadow-lg border-2 border-purple-200 text-center hover:shadow-xl transition-all duration-300 group">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-purple-200 rounded-full group-hover:bg-purple-300 transition-colors">
-                  <AppIcons.Professors size={32} className="text-purple-700" />
-                </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl sm:rounded-2xl shadow-lg border-2 border-purple-200 p-4 sm:p-6 text-center hover:shadow-xl transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <AppIcons.Preview size={20} className="text-purple-600" />
               </div>
-              <p className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">{recipientStats.professors}</p>
-              <p className="text-sm sm:text-base font-semibold text-purple-700">Professors</p>
+              <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
+                {stats.opened}
+              </div>
+              <div className="text-xs sm:text-sm text-purple-700 font-medium">
+                Opened
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl sm:rounded-2xl shadow-lg border-2 border-indigo-200 p-4 sm:p-6 text-center hover:shadow-xl transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <AppIcons.ExternalLink size={20} className="text-indigo-600" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-indigo-600 mb-2">
+                {stats.clicked}
+              </div>
+              <div className="text-xs sm:text-sm text-indigo-700 font-medium">
+                Clicked
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl sm:rounded-2xl shadow-lg border-2 border-red-200 p-4 sm:p-6 text-center hover:shadow-xl transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <AppIcons.Close size={20} className="text-red-600" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-red-600 mb-2">
+                {stats.failed}
+              </div>
+              <div className="text-xs sm:text-sm text-red-700 font-medium">
+                Failed
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl sm:rounded-2xl shadow-lg border-2 border-yellow-200 p-4 sm:p-6 text-center hover:shadow-xl transition-all">
+              <div className="flex items-center justify-center mb-3">
+                <AppIcons.Clock size={20} className="text-yellow-600" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-600 mb-2">
+                {stats.pending}
+              </div>
+              <div className="text-xs sm:text-sm text-yellow-700 font-medium">
+                Pending
+              </div>
             </div>
           </div>
 
-          {/* Enhanced Email Logs */}
-          <div className="lg:col-span-4">
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8">
-              <div className="flex items-center gap-2 sm:gap-3 mb-6 sm:mb-8">
-                <AppIcons.List size={20} className="text-indigo-600" />
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Email Delivery Logs</h3>
+          {/* Enhanced Recipient and Channel Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
+            {/* Enhanced Recipient Stats */}
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 lg:p-8 hover:shadow-2xl transition-all">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl shadow-md">
+                  <AppIcons.User size={20} className="text-blue-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                  Recipients
+                </h3>
               </div>
-              
-              {/* Enhanced Filter Buttons */}
-              <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-6 sm:mb-8">
-                <div className="flex flex-wrap gap-2 sm:gap-3">
-                  <button
-                    onClick={() => setFilter('all')}
-                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                      filter === 'all' 
-                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg transform scale-105' 
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  >
-                    <AppIcons.List size={14} />
-                    <span>All ({stats.total})</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setFilter('delivered')}
-                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                      filter === 'delivered' 
-                        ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg transform scale-105' 
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  >
-                    <AppIcons.Check size={14} />
-                    <span className="hidden sm:inline">Delivered ({stats.delivered})</span>
-                    <span className="sm:hidden">Delivered</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setFilter('opened')}
-                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                      filter === 'opened' 
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transform scale-105' 
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  >
-                    <AppIcons.Preview size={14} />
-                    <span className="hidden sm:inline">Opened ({stats.opened})</span>
-                    <span className="sm:hidden">Opened</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setFilter('failed')}
-                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                      filter === 'failed' 
-                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg transform scale-105' 
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  >
-                    <AppIcons.Close size={14} />
-                    <span className="hidden sm:inline">Failed ({stats.failed})</span>
-                    <span className="sm:hidden">Failed</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setFilter('sent')}
-                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
-                      filter === 'sent' 
-                        ? 'bg-gradient-to-r from-yellow-600 to-yellow-700 text-white shadow-lg transform scale-105' 
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  >
-                    <AppIcons.Clock size={14} />
-                    <span className="hidden sm:inline">Pending ({stats.pending})</span>
-                    <span className="sm:hidden">Pending</span>
-                  </button>
+
+              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <AppIcons.Students size={18} className="text-blue-600" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">
+                    {recipientStats.students}
+                  </div>
+                  <div className="text-xs sm:text-sm text-blue-700 font-medium">
+                    Students
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <AppIcons.Guests size={18} className="text-green-600" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">
+                    {recipientStats.guests}
+                  </div>
+                  <div className="text-xs sm:text-sm text-green-700 font-medium">
+                    Guests
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <AppIcons.User size={18} className="text-purple-600" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-purple-600 mb-1">
+                    {recipientStats.professors}
+                  </div>
+                  <div className="text-xs sm:text-sm text-purple-700 font-medium">
+                    Professors
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Enhanced Email Logs Table */}
-              <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden shadow-inner">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                      <tr>
-                        <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Recipient</th>
-                        <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Type</th>
-                        <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Details</th>
-                        <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
-                        <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Sent At</th>
-                        <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Error</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredLogs.map((log) => {
-                        const recipientInfo = getRecipientInfo(log)
-                        return (
-                          <tr key={log.id} className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200">
-                            <td className="px-4 sm:px-6 py-4 sm:py-5">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg">
-                                  <span className="text-lg">{recipientInfo.icon}</span>
-                                </div>
-                                <div>
-                                  <p className="text-sm sm:text-base font-semibold text-gray-900">{recipientInfo.name}</p>
-                                  <p className="text-xs sm:text-sm text-gray-600">{recipientInfo.email}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 sm:px-6 py-4 sm:py-5">
-                              <span className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-full bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300">
-                                {recipientInfo.type}
-                              </span>
-                            </td>
-                            <td className="px-4 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm text-gray-700">
-                              <div className="max-w-xs truncate" title={recipientInfo.details}>
-                                {recipientInfo.details}
-                              </div>
-                            </td>
-                            <td className="px-4 sm:px-6 py-4 sm:py-5">
-                              <span className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold border-2 ${getStatusColor(log.status)}`}>
-                                {getStatusIcon(log.status)} 
-                                <span>{log.status}</span>
-                              </span>
-                            </td>
-                            <td className="px-4 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm text-gray-700">
-                              <div className="bg-gray-100 rounded-lg px-2 py-1">
-                                {new Date(log.sentAt).toLocaleString()}
-                              </div>
-                            </td>
-                            <td className="px-4 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm text-red-600">
-                              {log.errorMessage && (
-                                <div className="max-w-xs bg-red-50 border border-red-200 rounded-lg px-2 py-1" title={log.errorMessage}>
-                                  <span className="truncate">
-                                    {log.errorMessage.substring(0, 30)}...
-                                  </span>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+            {/* Enhanced Channel Stats */}
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 lg:p-8 hover:shadow-2xl transition-all">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                <div className="p-2 sm:p-3 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl shadow-md">
+                  <AppIcons.Rocket size={20} className="text-green-600" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                  Channels
+                </h3>
+              </div>
 
-                  {filteredLogs.length === 0 && (
-                    <div className="text-center py-12">
-                      <div className="flex justify-center mb-4">
-                        <div className="p-4 bg-gray-100 rounded-full">
-                          <AppIcons.Search size={32} className="text-gray-400" />
+              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <AppIcons.Email size={18} className="text-blue-600" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">
+                    {channelStats.email}
+                  </div>
+                  <div className="text-xs sm:text-sm text-blue-700 font-medium">
+                    Email
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <AppIcons.Phone size={18} className="text-green-600" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">
+                    {channelStats.sms}
+                  </div>
+                  <div className="text-xs sm:text-sm text-green-700 font-medium">
+                    SMS
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <AppIcons.WhatsApp size={18} className="text-purple-600" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-purple-600 mb-1">
+                    {channelStats.whatsapp}
+                  </div>
+                  <div className="text-xs sm:text-sm text-purple-700 font-medium">
+                    WhatsApp
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Filters */}
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="p-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl">
+                <AppIcons.Filter size={18} className="text-gray-600" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                Filter Options
+              </h3>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
+              {/* Status Filter */}
+              <div className="flex-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                  <AppIcons.Filter size={16} />
+                  Filter by Status:
+                </label>
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                >
+                  <option value="all">All Status</option>
+                  <option value="sent">Sent</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="opened">Opened</option>
+                  <option value="read">Read</option>
+                  <option value="clicked">Clicked</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+
+              {/* Channel Filter */}
+              <div className="flex-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                  <AppIcons.Filter size={16} />
+                  Filter by Channel:
+                </label>
+                <select
+                  value={channelFilter}
+                  onChange={(e) => setChannelFilter(e.target.value)}
+                  className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                >
+                  <option value="all">All Channels</option>
+                  <option value="email">Email</option>
+                  <option value="sms">SMS</option>
+                  <option value="whatsapp">WhatsApp</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Logs Table */}
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 sm:px-6 py-4 sm:py-6 border-b-2 border-blue-200">
+              <div className="flex items-center gap-3">
+                <AppIcons.List size={20} className="text-blue-600" />
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                  Message Logs ({filteredLogs.length} records)
+                </h3>
+              </div>
+            </div>
+
+            {filteredLogs.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y-2 divide-gray-200">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <AppIcons.User size={14} />
+                          Recipient
                         </div>
-                      </div>
-                      <p className="text-lg font-medium text-gray-700 mb-2">No emails found</p>
-                      <p className="text-sm text-gray-500">No emails found with status: <span className="font-semibold">{filter}</span></p>
-                    </div>
-                  )}
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <AppIcons.Rocket size={14} />
+                          Channel
+                        </div>
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <AppIcons.List size={14} />
+                          Type
+                        </div>
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <AppIcons.Info size={14} />
+                          Details
+                        </div>
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <AppIcons.Check size={14} />
+                          Status
+                        </div>
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <AppIcons.Clock size={14} />
+                          Sent At
+                        </div>
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <AppIcons.Warning size={14} />
+                          Error
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {filteredLogs.map((log) => {
+                      const recipientInfo = getRecipientInfo(log);
+                      const contact =
+                        log.channel === "email"
+                          ? recipientInfo.email
+                          : log.phoneNumber ||
+                            log.student?.phone ||
+                            log.guest?.phone ||
+                            log.professor?.phone;
+
+                      return (
+                        <tr
+                          key={`${log.channel}-${log.id}`}
+                          className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all"
+                        >
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                            <div>
+                              <div className="font-bold text-gray-900 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-800">
+                                  {recipientInfo.icon}
+                                </span>
+                                {recipientInfo.name}
+                              </div>
+                              <div className="text-gray-600 text-xs mt-1">
+                                {contact}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                            <span
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 ${
+                                log.channel === "email"
+                                  ? "bg-blue-100 text-blue-800 border-blue-300"
+                                  : log.channel === "sms"
+                                  ? "bg-green-100 text-green-800 border-green-300"
+                                  : "bg-purple-100 text-purple-800 border-purple-300"
+                              }`}
+                            >
+                              {log.channel.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {recipientInfo.type}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {recipientInfo.details}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                            <span
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 ${
+                                log.status === "delivered"
+                                  ? "bg-green-100 text-green-800 border-green-300"
+                                  : ["opened", "read"].includes(log.status)
+                                  ? "bg-blue-100 text-blue-800 border-blue-300"
+                                  : log.status === "clicked"
+                                  ? "bg-purple-100 text-purple-800 border-purple-300"
+                                  : log.status === "failed"
+                                  ? "bg-red-100 text-red-800 border-red-300"
+                                  : "bg-yellow-100 text-yellow-800 border-yellow-300"
+                              }`}
+                            >
+                              [{getStatusIcon(log.status)}] {log.status}
+                            </span>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {new Date(log.sentAt).toLocaleString()}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                            {log.errorMessage && (
+                              <div className="flex items-center gap-2">
+                                <AppIcons.Warning size={14} />
+                                <span
+                                  title={log.errorMessage}
+                                  className="truncate max-w-xs"
+                                >
+                                  {log.errorMessage.substring(0, 30)}...
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="px-4 sm:px-6 py-12 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-4 bg-gray-100 rounded-full">
+                    <AppIcons.Search size={24} className="text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm sm:text-base">
+                    {filter === "all" && channelFilter === "all"
+                      ? "No messages found"
+                      : `No messages found with status: ${filter} and channel: ${channelFilter}`}
+                  </p>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
-
     </AdminProtection>
-  )
+  );
 }

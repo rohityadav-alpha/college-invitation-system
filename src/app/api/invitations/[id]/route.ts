@@ -1,7 +1,8 @@
+// src/app/api/invitations/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET - Fetch single invitation with detailed logs
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -40,7 +41,71 @@ export async function GET(
               }
             }
           },
-          orderBy: { sentAt: 'desc' }
+          orderBy: { sentAt: 'desc' }  // ✅ Fixed: Use sentAt instead of createdAt
+        },
+        smsLogs: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                course: true,
+                year: true
+              }
+            },
+            guest: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                organization: true,
+                designation: true
+              }
+            },
+            professor: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                college: true,
+                department: true
+              }
+            }
+          },
+          orderBy: { sentAt: 'desc' }  // ✅ Fixed: Use sentAt instead of createdAt
+        },
+        whatsappLogs: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                course: true,
+                year: true
+              }
+            },
+            guest: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                organization: true,
+                designation: true
+              }
+            },
+            professor: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                college: true,
+                department: true
+              }
+            }
+          },
+          orderBy: { sentAt: 'desc' }  // ✅ Fixed: Use sentAt instead of createdAt
         }
       }
     })

@@ -49,7 +49,8 @@ import {
   Tablet, Laptop, Server, Database,
   Cloud, CloudOff, Globe, Navigation,
   Compass, Flag, Bookmark, Tag,
-  Hash, AtSign, Percent, DollarSign, 
+  Hash, AtSign, Percent, DollarSign,
+  Radio, 
 } from 'lucide-react'
 
 // Icon Props Interface
@@ -355,5 +356,12 @@ export const AltIcons = {
 
   Filter: ({ size = 20, className = "", color }: IconProps) => (
     <FaFilter size={size} className={className} color={color} />
-  )
+  ),
+
+  Radio: ({ size = 20, className = "", color }: IconProps) => (
+    <Radio size={size} className={className} color={color} />
+  ),
+  Eye: ({ size = 20, className = "", color }: IconProps) => (
+    <FaEye size={size} className={className} color={color} />
+  ),
 }
