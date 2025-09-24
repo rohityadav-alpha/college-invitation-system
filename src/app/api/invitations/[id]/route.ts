@@ -1,19 +1,21 @@
+// src\app\api\invitations\[id]\route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET - Fetch single invitation with detailed logs
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }  // ✅ Changed to Promise
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // ✅ Await params first (Next.js 15 requirement)
+    // Await params first (Next.js 15 requirement)
     const { id } = await context.params
     
     console.log('Fetching invitation with ID:', id)
     
     const invitation = await prisma.invitation.findUnique({
-      where: { id }, // ✅ Now using awaited id
+      where: { id },
       include: {
         emailLogs: {
           include: {
@@ -82,7 +84,7 @@ export async function GET(
   }
 }
 
-// PUT - Update invitation (if needed)
+// PUT - Update invitation
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -124,7 +126,7 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete invitation (if needed)
+// DELETE - Delete invitation
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
