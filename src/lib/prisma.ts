@@ -1,32 +1,28 @@
+// src/lib/prisma.ts
+
 import { PrismaClient } from '@prisma/client'
 
-let prisma: PrismaClient
-
-declare global {
-  var __prisma: PrismaClient | undefined
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
 }
 
-// Safe initialization that doesn't fail during build
-try {
-  if (typeof window === 'undefined') {
-    if (process.env.NODE_ENV === 'production') {
-      prisma = new PrismaClient()
-    } else {
-      if (!global.__prisma) {
-        global.__prisma = new PrismaClient()
-      }
-      prisma = global.__prisma
-    }
-  }
-} catch (error) {
-  console.warn('Prisma initialization failed, using mock client for build')
-  prisma = {} as PrismaClient
-}
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    errorFormat: 'pretty',
+  })
 
-// Ensure prisma is always defined
-if (!prisma) {
-  prisma = {} as PrismaClient
-}
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export { prisma }
+// Graceful shutdown
+process.on('beforeExit', async () => {
+  await prisma.$disconnect()
+})
+
 export default prisma
