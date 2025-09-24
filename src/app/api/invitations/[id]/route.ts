@@ -4,9 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export const maxDuration = 30
-export const runtime = 'nodejs' 
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// GET - Fetch single invitation with all channel logs
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -17,98 +18,155 @@ export async function GET(
     const { id } = await context.params
     console.log('Fetching invitation with ID:', id)
 
-    // Environment check
     if (!process.env.DATABASE_URL) {
-      console.error('❌ DATABASE_URL missing')
-      return NextResponse.json({
-        error: 'Database not configured'
-      }, { status: 503 })
+      return NextResponse.json({ error: 'Database not configured' }, { status: 503 })
     }
 
     // Test connection
-    console.log('Testing database connection...')
     await prisma.$queryRaw`SELECT 1`
-    console.log('✅ Database connected successfully')
+    console.log('✅ Database connected')
 
-    // Fetch invitation with ONLY existing relations
-    console.log('Fetching invitation data...')
+    // Fetch invitation with ALL channel logs
     const invitation = await prisma.invitation.findUnique({
       where: { id },
       include: {
+        // Email Logs with recipient details
         emailLogs: {
           include: {
             student: {
               select: { 
-                id: true, 
-                name: true, 
-                email: true, 
-                course: true, 
-                year: true 
+                id: true, name: true, email: true, course: true, year: true 
               }
             },
             guest: {
               select: { 
-                id: true, 
-                name: true, 
-                email: true, 
-                organization: true, 
-                designation: true 
+                id: true, name: true, email: true, organization: true, designation: true 
               }
             },
             professor: {
               select: { 
-                id: true, 
-                name: true, 
-                email: true, 
-                college: true, 
-                department: true 
+                id: true, name: true, email: true, college: true, department: true 
               }
             }
           },
-          orderBy: { sentAt: 'desc' },
-          take: 100 // Limit for performance
+          orderBy: { sentAt: 'desc' }
+        },
+        
+        // SMS Logs with recipient details  
+        smsLogs: {
+          include: {
+            student: {
+              select: { 
+                id: true, name: true, phone: true, course: true, year: true 
+              }
+            },
+            guest: {
+              select: { 
+                id: true, name: true, phone: true, organization: true, designation: true 
+              }
+            },
+            professor: {
+              select: { 
+                id: true, name: true, phone: true, college: true, department: true 
+              }
+            }
+          },
+          orderBy: { sentAt: 'desc' }
+        },
+        
+        // WhatsApp Logs with recipient details
+        whatsappLogs: {
+          include: {
+            student: {
+              select: { 
+                id: true, name: true, phone: true, course: true, year: true 
+              }
+            },
+            guest: {
+              select: { 
+                id: true, name: true, phone: true, organization: true, designation: true 
+              }
+            },
+            professor: {
+              select: { 
+                id: true, name: true, phone: true, college: true, department: true 
+              }
+            }
+          },
+          orderBy: { sentAt: 'desc' }
         }
-        // ❌ REMOVED smsLogs and whatsappLogs - they don't exist in schema
       }
     })
 
     if (!invitation) {
-      console.log('❌ Invitation not found:', id)
-      return NextResponse.json({
-        error: 'Invitation not found'
-      }, { status: 404 })
+      console.log('❌ Invitation not found')
+      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 })
     }
 
+    // Log channel statistics
     console.log(`✅ Successfully fetched invitation: ${invitation.title}`)
-    console.log(`Email logs count: ${invitation.emailLogs?.length || 0}`)
+    console.log(`📧 Email logs: ${invitation.emailLogs?.length || 0}`)
+    console.log(`📱 SMS logs: ${invitation.smsLogs?.length || 0}`)
+    console.log(`💬 WhatsApp logs: ${invitation.whatsappLogs?.length || 0}`)
 
-    return NextResponse.json(invitation, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
+    // Calculate detailed analytics
+    const emailLogs = invitation.emailLogs || []
+    const smsLogs = invitation.smsLogs || []
+    const whatsappLogs = invitation.whatsappLogs || []
+    const allLogs = [...emailLogs, ...smsLogs, ...whatsappLogs]
+
+    const detailedAnalytics = {
+      summary: {
+        totalMessages: allLogs.length,
+        totalDelivered: allLogs.filter(log => log.status === 'delivered').length,
+        totalFailed: allLogs.filter(log => log.status === 'failed').length,
+        totalPending: allLogs.filter(log => log.status === 'sent').length
+      },
+      byChannel: {
+        email: {
+          total: emailLogs.length,
+          delivered: emailLogs.filter(log => log.status === 'delivered').length,
+          opened: emailLogs.filter(log => log.status === 'opened').length,
+          clicked: emailLogs.filter(log => log.status === 'clicked').length,
+          failed: emailLogs.filter(log => log.status === 'failed').length
+        },
+        sms: {
+          total: smsLogs.length,
+          delivered: smsLogs.filter(log => log.status === 'delivered').length,
+          failed: smsLogs.filter(log => log.status === 'failed').length
+        },
+        whatsapp: {
+          total: whatsappLogs.length,
+          delivered: whatsappLogs.filter(log => log.status === 'delivered').length,
+          read: whatsappLogs.filter(log => log.status === 'read').length,
+          failed: whatsappLogs.filter(log => log.status === 'failed').length
+        }
       }
+    }
+
+    const responseData = {
+      ...invitation,
+      analytics: detailedAnalytics,
+      debug: {
+        timestamp: new Date().toISOString(),
+        channels: {
+          email: invitation.emailLogs?.length || 0,
+          sms: invitation.smsLogs?.length || 0,
+          whatsapp: invitation.whatsappLogs?.length || 0
+        }
+      }
+    }
+
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': 'no-cache' }
     })
 
   } catch (error) {
     console.error('❌ Invitation Detail API Error:', {
       name: error?.name,
       message: error?.message,
-      code: error?.code,
-      timestamp: new Date().toISOString()
+      code: error?.code
     })
-
-    // Handle different error types
-    if (error?.message?.includes('timeout')) {
-      return NextResponse.json({
-        error: 'Database timeout - please try again'
-      }, { status: 504 })
-    }
-
-    if (error?.code === 'P2025') {
-      return NextResponse.json({
-        error: 'Invitation not found'
-      }, { status: 404 })
-    }
 
     return NextResponse.json({
       error: 'Failed to fetch invitation',
@@ -124,116 +182,66 @@ export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  console.log('=== UPDATE INVITATION API START ===')
-  
   try {
     const { id } = await context.params
-    const body = await request.json().catch(() => null)
-    
-    if (!body) {
-      return NextResponse.json({
-        error: 'Invalid request body'
-      }, { status: 400 })
-    }
-
+    const body = await request.json()
     const { title, subject, content } = body
 
     if (!title?.trim() || !subject?.trim() || !content?.trim()) {
       return NextResponse.json({
-        error: 'Title, subject, and content are required'
+        error: 'All fields are required'
       }, { status: 400 })
     }
 
-    // Check if invitation exists
-    const existingInvitation = await prisma.invitation.findUnique({
-      where: { id }
-    })
-
-    if (!existingInvitation) {
-      return NextResponse.json({
-        error: 'Invitation not found'
-      }, { status: 404 })
-    }
-
-    // Update invitation
     const updatedInvitation = await prisma.invitation.update({
       where: { id },
-      data: { 
-        title: title.trim(), 
+      data: {
+        title: title.trim(),
         subject: subject.trim(), 
         content: content.trim()
       }
     })
 
-    console.log('✅ Invitation updated successfully')
-
-    return NextResponse.json(updatedInvitation, {
-      headers: { 'Cache-Control': 'no-cache' }
-    })
+    return NextResponse.json(updatedInvitation)
 
   } catch (error) {
     console.error('❌ Update Invitation Error:', error)
     
     if (error?.code === 'P2025') {
-      return NextResponse.json({
-        error: 'Invitation not found'
-      }, { status: 404 })
+      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      error: 'Failed to update invitation'
-    }, { status: 500 })
-  } finally {
-    console.log('=== UPDATE INVITATION API END ===')
+    return NextResponse.json({ error: 'Failed to update invitation' }, { status: 500 })
   }
 }
 
-// DELETE - Delete invitation
+// DELETE - Delete invitation and all related logs
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  console.log('=== DELETE INVITATION API START ===')
-  
   try {
     const { id } = await context.params
 
-    // Check if invitation exists
-    const existingInvitation = await prisma.invitation.findUnique({
+    // Delete invitation (cascades to all logs automatically)
+    await prisma.invitation.delete({
       where: { id }
     })
 
-    if (!existingInvitation) {
-      return NextResponse.json({
-        error: 'Invitation not found'
-      }, { status: 404 })
-    }
-
-    // Delete invitation
-    await prisma.invitation.delete({ 
-      where: { id } 
-    })
-
-    console.log('✅ Invitation deleted successfully')
+    console.log('✅ Invitation and all related logs deleted successfully')
 
     return NextResponse.json({
       message: 'Invitation deleted successfully',
       deletedId: id
-    }, { headers: { 'Cache-Control': 'no-cache' } })
+    })
 
   } catch (error) {
     console.error('❌ Delete Invitation Error:', error)
     
     if (error?.code === 'P2025') {
-      return NextResponse.json({
-        error: 'Invitation not found'
-      }, { status: 404 })
+      return NextResponse.json({ error: 'Invitation not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      error: 'Failed to delete invitation'
-    }, { status: 500 })
-  } finally {
-    console.log('=== DELETE INVITATION API END ===')
+    return NextResponse.json({ error: 'Failed to delete invitation' }, { status: 500 })
   }
 }
