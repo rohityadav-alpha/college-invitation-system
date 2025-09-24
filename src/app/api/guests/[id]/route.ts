@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET - Fetch single student
+// GET - Fetch single guest
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -10,7 +10,7 @@ export async function GET(
     // Await params first (Next.js 15 requirement)
     const { id } = await context.params
     
-    const student = await prisma.student.findUnique({
+    const guest = await prisma.guest.findUnique({
       where: { id },
       include: {
         emailLogs: {
@@ -70,54 +70,54 @@ export async function GET(
       }
     })
 
-    if (!student) {
+    if (!guest) {
       return NextResponse.json(
-        { error: 'Student not found' }, 
+        { error: 'Guest not found' }, 
         { status: 404 }
       )
     }
 
-    return NextResponse.json(student)
+    return NextResponse.json(guest)
   } catch (error) {
-    console.error('Error fetching student:', error)
+    console.error('Error fetching guest:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch student' }, 
+      { error: 'Failed to fetch guest' }, 
       { status: 500 }
     )
   }
 }
 
-// PUT - Update student
+// PUT - Update guest
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params
-    const { name, email, course, year, phone } = await request.json()
+    const { name, email, organization, designation, category, phone } = await request.json()
 
     // Validate required fields
-    if (!name || !email || !course || !year) {
+    if (!name || !email || !organization || !designation) {
       return NextResponse.json(
-        { error: 'Name, email, course, and year are required' }, 
+        { error: 'Name, email, organization, and designation are required' }, 
         { status: 400 }
       )
     }
 
-    // Check if student exists
-    const existingStudent = await prisma.student.findUnique({
+    // Check if guest exists
+    const existingGuest = await prisma.guest.findUnique({
       where: { id }
     })
 
-    if (!existingStudent) {
+    if (!existingGuest) {
       return NextResponse.json(
-        { error: 'Student not found' }, 
+        { error: 'Guest not found' }, 
         { status: 404 }
       )
     }
 
-    // Check email uniqueness (excluding current student)
-    const emailExists = await prisma.student.findFirst({
+    // Check email uniqueness (excluding current guest)
+    const emailExists = await prisma.guest.findFirst({
       where: { 
         email,
         id: { not: id }
@@ -126,33 +126,34 @@ export async function PUT(
 
     if (emailExists) {
       return NextResponse.json(
-        { error: 'Student with this email already exists' }, 
+        { error: 'Guest with this email already exists' }, 
         { status: 409 }
       )
     }
 
-    const updatedStudent = await prisma.student.update({
+    const updatedGuest = await prisma.guest.update({
       where: { id },
       data: {
         name,
         email,
-        course,
-        year,
+        organization,
+        designation,
+        category: category || 'guest',
         phone: phone || null
       }
     })
 
-    return NextResponse.json(updatedStudent)
+    return NextResponse.json(updatedGuest)
   } catch (error) {
-    console.error('Error updating student:', error)
+    console.error('Error updating guest:', error)
     return NextResponse.json(
-      { error: 'Failed to update student' }, 
+      { error: 'Failed to update guest' }, 
       { status: 500 }
     )
   }
 }
 
-// DELETE - Delete student
+// DELETE - Delete guest
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -160,29 +161,29 @@ export async function DELETE(
   try {
     const { id } = await context.params
 
-    // Check if student exists
-    const existingStudent = await prisma.student.findUnique({
+    // Check if guest exists
+    const existingGuest = await prisma.guest.findUnique({
       where: { id }
     })
 
-    if (!existingStudent) {
+    if (!existingGuest) {
       return NextResponse.json(
-        { error: 'Student not found' }, 
+        { error: 'Guest not found' }, 
         { status: 404 }
       )
     }
 
-    await prisma.student.delete({
+    await prisma.guest.delete({
       where: { id }
     })
 
     return NextResponse.json(
-      { message: 'Student deleted successfully' }
+      { message: 'Guest deleted successfully' }
     )
   } catch (error) {
-    console.error('Error deleting student:', error)
+    console.error('Error deleting guest:', error)
     return NextResponse.json(
-      { error: 'Failed to delete student' }, 
+      { error: 'Failed to delete guest' }, 
       { status: 500 }
     )
   }
