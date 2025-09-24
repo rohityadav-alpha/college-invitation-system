@@ -1,10 +1,11 @@
 // src\app\invitations\page.tsx
+
 'use client'
 import { useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import AdminProtection from '@/components/AdminProtection'
 import Link from 'next/link'
-import { AppIcons } from '@/components/icons/AppIcons'
+import {AppIcons} from '@/components/icons/AppIcons'
 
 interface EmailLog {
   id: string

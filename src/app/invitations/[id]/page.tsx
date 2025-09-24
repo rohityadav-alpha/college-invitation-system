@@ -1,10 +1,11 @@
 // src\app\invitations\[id]\page.tsx
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import AdminProtection from '@/components/AdminProtection'
-import { AppIcons } from '@/components/icons/AppIcons'
+import {AppIcons} from '@/components/icons/AppIcons'
 import Link from 'next/link'
 
 interface EmailLog {
@@ -59,7 +60,7 @@ export default function InvitationDetailPage() {
   const [channelFilter, setChannelFilter] = useState('all')
   const [retrying, setRetrying] = useState(false)
   
-  // New states for edit/delete functionality
+  // Edit/Delete states
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -96,7 +97,6 @@ export default function InvitationDetailPage() {
     }
   }
 
-  // Handle Edit functionality
   const handleEdit = () => {
     setIsEditing(true)
   }
@@ -144,7 +144,6 @@ export default function InvitationDetailPage() {
     setIsEditing(false)
   }
 
-  // Handle Delete functionality
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this invitation? This action cannot be undone.')) {
       deleteInvitation()
@@ -175,11 +174,10 @@ export default function InvitationDetailPage() {
 
   const retryFailedMessages = async () => {
     setRetrying(true)
-    // Simulate retry operation
     setTimeout(() => {
       setRetrying(false)
       alert('Failed messages have been retried!')
-      fetchInvitation() // Refresh data
+      fetchInvitation()
     }, 2000)
   }
 
@@ -190,7 +188,7 @@ export default function InvitationDetailPage() {
         email: log.student.email,
         type: 'Student',
         details: `${log.student.course} - ${log.student.year}`,
-        icon: '👨‍🎓'
+        icon: log.student.name.charAt(0).toUpperCase()
       }
     } else if (log.guest) {
       return {
@@ -198,7 +196,7 @@ export default function InvitationDetailPage() {
         email: log.guest.email,
         type: 'Guest',
         details: `${log.guest.organization} - ${log.guest.designation}`,
-        icon: '🤝'
+        icon: log.guest.name.charAt(0).toUpperCase()
       }
     } else if (log.professor) {
       return {
@@ -206,7 +204,7 @@ export default function InvitationDetailPage() {
         email: log.professor.email,
         type: 'Professor',
         details: `${log.professor.college} - ${log.professor.department}`,
-        icon: '👨‍🏫'
+        icon: log.professor.name.charAt(0).toUpperCase()
       }
     }
     return {
@@ -214,18 +212,18 @@ export default function InvitationDetailPage() {
       email: 'N/A',
       type: 'Unknown',
       details: 'No details available',
-      icon: '❓'
+      icon: '?'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'delivered': return '✅'
-      case 'opened': return '👁️'
-      case 'clicked': return '🔗'
-      case 'failed': return '❌'
-      case 'sent': return '📤'
-      default: return '⏳'
+      case 'delivered': return 'D'
+      case 'opened': return 'O'
+      case 'clicked': return 'C'
+      case 'failed': return 'F'
+      case 'sent': return 'S'
+      default: return 'P'
     }
   }
 
@@ -285,7 +283,7 @@ export default function InvitationDetailPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           
-          {/* Header with Back Button and Edit/Delete */}
+          {/* Header with Edit/Delete */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
               <Link
@@ -305,7 +303,6 @@ export default function InvitationDetailPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              {/* Edit Button */}
               <button
                 onClick={handleEdit}
                 disabled={isEditing}
@@ -315,7 +312,6 @@ export default function InvitationDetailPage() {
                 Edit
               </button>
 
-              {/* Delete Button */}
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
@@ -449,49 +445,37 @@ export default function InvitationDetailPage() {
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg border-2 border-blue-200 p-6 text-center">
-              <div className="flex items-center justify-center mb-3">
-                <AppIcons.Send size={20} className="text-blue-600" />
-              </div>
+              <AppIcons.Send size={20} className="text-blue-600 mx-auto mb-3" />
               <div className="text-3xl font-bold text-blue-600 mb-2">{stats.total}</div>
               <div className="text-sm text-blue-700 font-medium">Total Sent</div>
             </div>
             
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-lg border-2 border-green-200 p-6 text-center">
-              <div className="flex items-center justify-center mb-3">
-                <AppIcons.Check size={20} className="text-green-600" />
-              </div>
+              <AppIcons.Check size={20} className="text-green-600 mx-auto mb-3" />
               <div className="text-3xl font-bold text-green-600 mb-2">{stats.delivered}</div>
               <div className="text-sm text-green-700 font-medium">Delivered</div>
             </div>
             
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-lg border-2 border-purple-200 p-6 text-center">
-              <div className="flex items-center justify-center mb-3">
-                <AppIcons.Preview size={20} className="text-purple-600" />
-              </div>
+              <AppIcons.Preview size={20} className="text-purple-600 mx-auto mb-3" />
               <div className="text-3xl font-bold text-purple-600 mb-2">{stats.opened}</div>
               <div className="text-sm text-purple-700 font-medium">Opened</div>
             </div>
             
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl shadow-lg border-2 border-indigo-200 p-6 text-center">
-              <div className="flex items-center justify-center mb-3">
-                <AppIcons.ExternalLink size={20} className="text-indigo-600" />
-              </div>
+              <AppIcons.ExternalLink size={20} className="text-indigo-600 mx-auto mb-3" />
               <div className="text-3xl font-bold text-indigo-600 mb-2">{stats.clicked}</div>
               <div className="text-sm text-indigo-700 font-medium">Clicked</div>
             </div>
             
             <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl shadow-lg border-2 border-red-200 p-6 text-center">
-              <div className="flex items-center justify-center mb-3">
-                <AppIcons.Close size={20} className="text-red-600" />
-              </div>
+              <AppIcons.Close size={20} className="text-red-600 mx-auto mb-3" />
               <div className="text-3xl font-bold text-red-600 mb-2">{stats.failed}</div>
               <div className="text-sm text-red-700 font-medium">Failed</div>
             </div>
             
             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-lg border-2 border-yellow-200 p-6 text-center">
-              <div className="flex items-center justify-center mb-3">
-                <AppIcons.Clock size={20} className="text-yellow-600" />
-              </div>
+              <AppIcons.Clock size={20} className="text-yellow-600 mx-auto mb-3" />
               <div className="text-3xl font-bold text-yellow-600 mb-2">{stats.pending}</div>
               <div className="text-sm text-yellow-700 font-medium">Pending</div>
             </div>
@@ -526,7 +510,7 @@ export default function InvitationDetailPage() {
 
               <div className="flex-1">
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-                  <AppIcons.Filter size={16} />
+                  <AppIcons.List size={16} />
                   Filter by Channel:
                 </label>
                 <select
@@ -547,7 +531,7 @@ export default function InvitationDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-6 border-b-2 border-blue-200">
               <div className="flex items-center gap-3">
-                <AppIcons.List size={20} className="text-blue-600" />
+                <AppIcons.Rocket size={20} className="text-blue-600" />
                 <h3 className="text-xl font-bold text-gray-900">Message Logs ({filteredLogs.length} records)</h3>
               </div>
             </div>
@@ -565,13 +549,7 @@ export default function InvitationDetailPage() {
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                         <div className="flex items-center gap-2">
-                          <AppIcons.Zap size={14} />
-                          Channel
-                        </div>
-                      </th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                        <div className="flex items-center gap-2">
-                          <AppIcons.Link size={14} />
+                          <AppIcons.List size={14} />
                           Type
                         </div>
                       </th>
@@ -583,7 +561,7 @@ export default function InvitationDetailPage() {
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                         <div className="flex items-center gap-2">
-                          <AppIcons.List size={14} />
+                          <AppIcons.Zap size={14} />
                           Status
                         </div>
                       </th>
@@ -614,11 +592,6 @@ export default function InvitationDetailPage() {
                               </div>
                               <div className="text-sm text-gray-600">{recipientInfo.email}</div>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                              EMAIL
-                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {recipientInfo.type}
