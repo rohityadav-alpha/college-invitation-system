@@ -1,5 +1,4 @@
 // src/app/api/send-bulk-email-enhanced/route.ts
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendBulkEmails } from '@/lib/email'
@@ -73,14 +72,14 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Prepare all recipients for MailerSend with proper recipient data
+    // Prepare all recipients for MailerSend
     const allRecipients = [
       ...students.map(s => ({ id: s.id, name: s.name, email: s.email, type: 'student' })),
       ...guests.map(g => ({ id: g.id, name: g.name, email: g.email, type: 'guest' })),
       ...professors.map(p => ({ id: p.id, name: p.name, email: p.email, type: 'professor' }))
     ]
 
-    console.log('Attempting to send emails with MailerSend:', {
+    console.log('📧 Attempting to send emails with MailerSend:', {
       totalEmails: allRecipients.length,
       fromEmail: process.env.MAILERSEND_FROM_EMAIL,
       sampleEmail: allRecipients[0] ? {
@@ -90,17 +89,15 @@ export async function POST(request: NextRequest) {
       } : 'None'
     })
 
-    // Prepare email list for MailerSend with recipient details
+    // Prepare email list for MailerSend
     const emailList = allRecipients.map(recipient => ({
       to: recipient.email,
-      name: recipient.name,
-      recipientId: recipient.id,
-      recipientType: recipient.type
+      name: recipient.name
     }))
 
     // Send emails using MailerSend
     try {
-      const result = await sendBulkEmails(emailList, subject, content, invitation.id)
+      const result = await sendBulkEmails(emailList, subject, content)
       
       let successCount = 0
       let failedEmails: any[] = []
@@ -122,9 +119,32 @@ export async function POST(request: NextRequest) {
         }))
       }
 
+      // Log successful emails
+      if (successCount > 0) {
+        const successfulLogs = allRecipients.slice(0, successCount).map(recipient => {
+          const logData: any = {
+            invitationId: invitation.id,
+            recipientType: recipient.type,
+            status: 'sent'
+          }
+
+          if (recipient.type === 'student') {
+            logData.studentId = recipient.id
+          } else if (recipient.type === 'guest') {
+            logData.guestId = recipient.id
+          } else if (recipient.type === 'professor') {
+            logData.professorId = recipient.id
+          }
+
+          return logData
+        })
+
+        await prisma.emailLog.createMany({ data: successfulLogs })
+      }
+
       return NextResponse.json({
         success: true,
-        message: `MailerSend: Successfully sent ${successCount} emails out of ${totalRecipients} (Students: ${students.length}, Guests: ${guests.length}, Professors: ${professors.length})`,
+        message: `✅ MailerSend: Successfully sent ${successCount} emails out of ${totalRecipients} (Students: ${students.length}, Guests: ${guests.length}, Professors: ${professors.length})`,
         invitationId: invitation.id,
         sentCount: successCount,
         failedCount: failedEmails.length,
@@ -133,7 +153,7 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (sendError: any) {
-      console.error('MailerSend send error details:', sendError)
+      console.error('❌ MailerSend send error details:', sendError)
 
       return NextResponse.json({
         error: `MailerSend API Error: ${sendError.message}`,
@@ -144,7 +164,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('General error:', error)
+    console.error('❌ General error:', error)
     return NextResponse.json(
       { error: 'Internal server error: ' + error.message },
       { status: 500 }

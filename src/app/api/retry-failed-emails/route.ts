@@ -1,8 +1,8 @@
-// src/app/api/retry-failed-emails/route.ts
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sendBulkEmails } from '@/lib/email'
+import sgMail from '@sendgrid/mail'
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,9 +22,7 @@ export async function POST(request: NextRequest) {
         emailLogs: {
           where: { status: 'failed' },
           include: {
-            student: true,
-            guest: true,
-            professor: true
+            student: true
           }
         }
       }
@@ -38,6 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const failedLogs = invitation.emailLogs
+    
     if (failedLogs.length === 0) {
       return NextResponse.json(
         { message: 'No failed emails to retry' },
@@ -45,81 +44,58 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare retry emails with proper recipient data
+    // Prepare retry emails
     const retryEmails = failedLogs.map(log => {
-      let recipient: any = null
-      let recipientType = ''
-
-      if (log.student) {
-        recipient = log.student
-        recipientType = 'student'
-      } else if (log.guest) {
-        recipient = log.guest
-        recipientType = 'guest'
-      } else if (log.professor) {
-        recipient = log.professor
-        recipientType = 'professor'
+      if (!log.student) {
+        throw new Error(`Student not found for email log ${log.id}`);
       }
-
-      if (!recipient) {
-        throw new Error(`Recipient not found for email log ${log.id}`)
-      }
+      const personalizedContent = invitation.content.replace(/\{\{name\}\}/g, log.student.name)
+      const personalizedSubject = invitation.subject.replace(/\{\{name\}\}/g, log.student.name)
 
       return {
-        to: recipient.email,
-        name: recipient.name,
-        recipientId: recipient.id,
-        recipientType: recipientType
+        to: log.student.email,
+        from: process.env.SENDGRID_FROM_EMAIL!,
+        subject: `[RETRY] ${personalizedSubject}`,
+        html: personalizedContent
       }
     })
 
-    // Send retry emails using MailerSend
+    // Send retry emails
     try {
-      const personalizedSubject = `[RETRY] ${invitation.subject}`
-      const result = await sendBulkEmails(retryEmails, personalizedSubject, invitation.content)
+      await sgMail.send(retryEmails)
 
-      if (result.success) {
-        // Update email logs status for successful retries
-        const successfulRetries = result.data.filter((r: any) => r.success)
-        
-        if (successfulRetries.length > 0) {
-          const updatePromises = failedLogs.slice(0, successfulRetries.length).map(log =>
-            prisma.emailLog.update({
-              where: { id: log.id },
-              data: {
-                status: 'sent',
-                sentAt: new Date(),
-                errorMessage: null
-              }
-            })
-          )
-          
-          await Promise.all(updatePromises)
-        }
-
-        return NextResponse.json({
-          success: true,
-          message: `Successfully retried ${successfulRetries.length} out of ${failedLogs.length} failed emails`,
-          retriedCount: successfulRetries.length,
-          totalFailed: failedLogs.length,
-          provider: 'MailerSend'
+      // Update email logs status
+      const updatePromises = failedLogs.map(log =>
+        prisma.emailLog.update({
+          where: { id: log.id },
+          data: {
+            status: 'sent',
+            sentAt: new Date(),
+            errorMessage: null
+          }
         })
-      } else {
-        throw new Error(result.error || 'Unknown MailerSend error')
-      }
+      )
+
+      await Promise.all(updatePromises)
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully retried ${failedLogs.length} failed emails`,
+        retriedCount: failedLogs.length
+      })
 
     } catch (emailError: any) {
       console.error('Retry email error:', emailError)
       return NextResponse.json(
-        { error: 'Failed to retry emails with MailerSend: ' + emailError.message },
+        { error: 'Failed to retry emails: ' + emailError.message },
         { status: 500 }
       )
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Retry failed emails error:', error)
     return NextResponse.json(
-      { error: 'Internal server error: ' + error.message },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

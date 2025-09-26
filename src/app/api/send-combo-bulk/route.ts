@@ -1,5 +1,4 @@
 // src/app/api/send-combo-bulk/route.ts
-
 import { NextRequest, NextResponse } from 'next/server'
 import { sendBulkEmails } from '@/lib/email'
 
@@ -115,24 +114,15 @@ export async function POST(request: NextRequest) {
     let emailResults = { sent: 0, failed: 0, errors: [] as any[] }
     if ((sendMethod === 'email' || sendMethod === 'combo') && emailSubject && emailContent) {
       try {
-        const emailList = allRecipients.map((recipient, index) => {
-          const recipientType = 
-            students.some(s => s.id === recipient.id) ? 'student' :
-            guests.some(g => g.id === recipient.id) ? 'guest' : 'professor'
-          
-          return {
-            to: recipient.email,
-            name: recipient.name,
-            recipientId: recipient.id,
-            recipientType
-          }
-        })
+        const emailList = allRecipients.map(recipient => ({
+          to: recipient.email,
+          name: recipient.name
+        }))
 
         const result = await sendBulkEmails(
           emailList,
           emailSubject,
-          emailContent,
-          invitationId
+          emailContent
         )
 
         if (result.success) {
@@ -194,7 +184,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: unknown) {
     const err = error as Error
-    console.error('Combo bulk send error:', err)
+    console.error('❌ Combo bulk send error:', err)
     return NextResponse.json(
       { error: 'Failed to process combo campaign', message: err.message },
       { status: 500 }

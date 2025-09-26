@@ -8,15 +8,15 @@ export const maxDuration = 30
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// GET - Fetch all invitations with enhanced MailerSend analytics
+// GET - Fetch all invitations with analytics
 export async function GET() {
-  console.log('=== ENHANCED INVITATIONS API START ===')
+  console.log('=== INVITATIONS LIST API START ===')
   
   try {
     // Environment validation
     if (!process.env.DATABASE_URL) {
-      console.error('DATABASE_URL environment variable missing')
-      return NextResponse.json([], {
+      console.error('❌ DATABASE_URL environment variable missing')
+      return NextResponse.json([], { 
         status: 200,
         headers: { 'Cache-Control': 'no-cache' }
       })
@@ -32,11 +32,10 @@ export async function GET() {
       )
     ])
     
-    console.log('Database connected successfully:', connectionTest)
+    console.log('✅ Database connected successfully:', connectionTest)
 
-    // Fetch invitations with enhanced analytics
-    console.log('Fetching invitations with enhanced analytics...')
-    
+    // Fetch invitations with timeout protection
+    console.log('Fetching invitations from database...')
     const invitations = await Promise.race([
       prisma.invitation.findMany({
         include: {
@@ -64,84 +63,45 @@ export async function GET() {
 
     console.log(`Found ${invitations?.length || 0} invitations`)
 
-    // Enhanced analytics calculation with MailerSend compatibility
-    const invitationsWithEnhancedAnalytics = (invitations || []).map((invitation) => {
+    // Calculate analytics for each invitation with safety checks
+    const invitationsWithAnalytics = (invitations || []).map((invitation) => {
       const logs = invitation?.emailLogs || []
       
-      // Basic analytics from database
       const analytics = {
         totalSent: logs.length,
-        delivered: logs.filter(log => ['delivered'].includes(log?.status)).length,
-        opened: logs.filter(log => ['opened'].includes(log?.status)).length,
-        clicked: logs.filter(log => ['clicked'].includes(log?.status)).length,
-        failed: logs.filter(log => ['failed', 'bounced', 'spam'].includes(log?.status)).length,
-        pending: logs.filter(log => ['sent'].includes(log?.status)).length,
-      }
-      
-      // Enhanced analytics with MailerSend data
-      const enhancedAnalytics = {
-        ...analytics,
-        // Calculate rates
-        deliveryRate: analytics.totalSent > 0
-          ? ((analytics.delivered / analytics.totalSent) * 100).toFixed(1)
-          : '0',
-        openRate: analytics.delivered > 0
-          ? ((analytics.opened / analytics.delivered) * 100).toFixed(1)
-          : '0',
-        clickRate: analytics.opened > 0
-          ? ((analytics.clicked / analytics.opened) * 100).toFixed(1)
-          : '0',
-        failureRate: analytics.totalSent > 0
-          ? ((analytics.failed / analytics.totalSent) * 100).toFixed(1)
-          : '0',
-        
-        // Additional metrics
-        hasMailerSendIntegration: logs.some(log => log.messageId),
-        syncableEmails: logs.filter(log => log.messageId && log.status === 'sent').length,
-        lastSentAt: logs.length > 0 
-          ? logs.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime())[0].sentAt
-          : null,
-        
-        // Status breakdown
-        statusBreakdown: {
-          sent: analytics.pending,
-          delivered: analytics.delivered,
-          opened: analytics.opened,
-          clicked: analytics.clicked,
-          failed: analytics.failed,
-        }
-      }
-
-      // Add recipient breakdown
-      const recipientBreakdown = {
-        students: logs.filter(log => log.studentId).length,
-        guests: logs.filter(log => log.guestId).length,
-        professors: logs.filter(log => log.professorId).length,
+        delivered: logs.filter(log => log?.status === 'delivered').length,
+        opened: logs.filter(log => log?.status === 'opened').length,
+        clicked: logs.filter(log => log?.status === 'clicked').length,
+        failed: logs.filter(log => log?.status === 'failed').length,
+        pending: logs.filter(log => log?.status === 'sent').length,
       }
 
       return {
         ...invitation,
-        analytics: enhancedAnalytics,
-        recipientBreakdown,
-        // Add flag for MailerSend sync availability
-        mailersendSyncAvailable: enhancedAnalytics.syncableEmails > 0
+        analytics: {
+          ...analytics,
+          deliveryRate: analytics.totalSent > 0 
+            ? ((analytics.delivered / analytics.totalSent) * 100).toFixed(1)
+            : '0',
+          openRate: analytics.totalSent > 0 
+            ? ((analytics.opened / analytics.totalSent) * 100).toFixed(1)
+            : '0'
+        }
       }
     })
 
-    console.log(`Returning ${invitationsWithEnhancedAnalytics.length} enhanced invitations`)
+    console.log(`✅ Returning ${invitationsWithAnalytics.length} processed invitations`)
 
-    return NextResponse.json(invitationsWithEnhancedAnalytics, {
+    return NextResponse.json(invitationsWithAnalytics, {
       status: 200,
-      headers: {
+      headers: { 
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'X-Total-Count': invitationsWithEnhancedAnalytics.length.toString(),
-        'X-MailerSend-Integration': 'enabled'
+        'Pragma': 'no-cache'
       }
     })
 
-  } catch (error: any) {
-    console.error('Enhanced Invitations API Error:', {
+  } catch (error) {
+    console.error('❌ Invitations List API Error:', {
       name: error?.name,
       message: error?.message,
       code: error?.code,
@@ -149,7 +109,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       env_check: {
         DATABASE_URL_exists: !!process.env.DATABASE_URL,
-        MAILERSEND_API_KEY_exists: !!process.env.MAILERSEND_API_KEY,
+        DATABASE_URL_length: process.env.DATABASE_URL?.length || 0,
         NODE_ENV: process.env.NODE_ENV
       }
     })
@@ -157,7 +117,7 @@ export async function GET() {
     // Handle specific error types
     if (error?.message?.includes('timeout')) {
       console.error('Database timeout occurred')
-      return NextResponse.json([], {
+      return NextResponse.json([], { 
         status: 200,
         headers: { 'Cache-Control': 'no-cache' }
       })
@@ -165,19 +125,20 @@ export async function GET() {
 
     if (error?.code === 'P2024') {
       console.error('Database connection pool exhausted')
-      return NextResponse.json([], {
+      return NextResponse.json([], { 
         status: 200,
         headers: { 'Cache-Control': 'no-cache' }
       })
     }
 
     // Always return empty array to prevent frontend crashes
-    return NextResponse.json([], {
+    return NextResponse.json([], { 
       status: 200,
       headers: { 'Cache-Control': 'no-cache' }
     })
+
   } finally {
-    console.log('=== ENHANCED INVITATIONS API END ===')
+    console.log('=== INVITATIONS LIST API END ===')
   }
 }
 
@@ -189,7 +150,7 @@ export async function POST(request: NextRequest) {
     // Environment validation
     if (!process.env.DATABASE_URL) {
       return NextResponse.json(
-        { error: 'Database not configured' },
+        { error: 'Database not configured' }, 
         { status: 503 }
       )
     }
@@ -198,7 +159,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null)
     if (!body) {
       return NextResponse.json(
-        { error: 'Invalid request body' },
+        { error: 'Invalid request body' }, 
         { status: 400 }
       )
     }
@@ -207,14 +168,17 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!title?.trim() || !subject?.trim() || !content?.trim()) {
-      return NextResponse.json({
-        error: 'Title, subject, and content are required',
-        details: {
-          title: !title?.trim() ? 'Title is required' : null,
-          subject: !subject?.trim() ? 'Subject is required' : null,
-          content: !content?.trim() ? 'Content is required' : null
-        }
-      }, { status: 400 })
+      return NextResponse.json(
+        { 
+          error: 'Title, subject, and content are required',
+          details: {
+            title: !title?.trim() ? 'Title is required' : null,
+            subject: !subject?.trim() ? 'Subject is required' : null,
+            content: !content?.trim() ? 'Content is required' : null
+          }
+        }, 
+        { status: 400 }
+      )
     }
 
     console.log('Creating new invitation:', { title: title.trim() })
@@ -234,18 +198,15 @@ export async function POST(request: NextRequest) {
       )
     ])
 
-    console.log('Invitation created successfully:', invitation.id)
+    console.log('✅ Invitation created successfully:', invitation.id)
 
-    return NextResponse.json(invitation, {
+    return NextResponse.json(invitation, { 
       status: 201,
-      headers: { 
-        'Cache-Control': 'no-cache',
-        'X-MailerSend-Ready': 'true'
-      }
+      headers: { 'Cache-Control': 'no-cache' }
     })
 
-  } catch (error: any) {
-    console.error('Create Invitation Error:', {
+  } catch (error) {
+    console.error('❌ Create Invitation Error:', {
       name: error?.name,
       message: error?.message,
       code: error?.code,
@@ -254,23 +215,25 @@ export async function POST(request: NextRequest) {
 
     if (error?.message?.includes('timeout')) {
       return NextResponse.json(
-        { error: 'Create operation timed out - please try again' },
+        { error: 'Create operation timed out - please try again' }, 
         { status: 504 }
       )
     }
 
     if (error?.code === 'P2002') {
       return NextResponse.json(
-        { error: 'An invitation with similar details already exists' },
+        { error: 'An invitation with similar details already exists' }, 
         { status: 409 }
       )
     }
 
-    return NextResponse.json({
-      error: 'Failed to create invitation',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
-
+    return NextResponse.json(
+      { 
+        error: 'Failed to create invitation',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    )
   } finally {
     console.log('=== CREATE INVITATION API END ===')
   }

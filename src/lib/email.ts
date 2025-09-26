@@ -1,84 +1,59 @@
-// src\lib\email.ts
-import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend'
-import { prisma } from '@/lib/prisma'
+import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
 
 const mailerSend = new MailerSend({
   apiKey: process.env.MAILERSEND_API_KEY!,
-})
+});
 
 export async function sendBulkEmails(
-  emails: { to: string; name: string; recipientId?: string; recipientType?: string }[],
+  emails: { to: string; name: string }[],
   subject: string,
-  content: string,
-  invitationId?: string
+  content: string
 ) {
   try {
     const sentFrom = new Sender(
       process.env.MAILERSEND_FROM_EMAIL!,
       process.env.MAILERSEND_FROM_NAME || "College Invitation System"
-    )
+    );
 
-    const results = []
+    const results = [];
     
-    for (const { to, name, recipientId, recipientType } of emails) {
+    // Send emails one by one for better control
+    for (const { to, name } of emails) {
       try {
-        const recipients = [new Recipient(to, name)]
+        const recipients = [new Recipient(to, name)];
         
         const emailParams = new EmailParams()
           .setFrom(sentFrom)
           .setTo(recipients)
           .setSubject(subject.replace(/\{name\}/g, name))
-          .setHtml(content.replace(/\{name\}/g, name))
+          .setHtml(content.replace(/\{name\}/g, name));
 
-        const response = await mailerSend.email.send(emailParams)
+        const response = await mailerSend.email.send(emailParams);
+        results.push({ email: to, success: true, response });
         
-        // Store in your existing EmailLog schema
-        if (response && response.body && invitationId) {
-          const logData: any = {
-            invitationId,
-            messageId: response.body.message_id || null,
-            recipientType: recipientType || 'unknown',
-            status: 'sent'
-          }
-          
-          // Set the appropriate foreign key based on recipient type
-          if (recipientType === 'student' && recipientId) {
-            logData.studentId = recipientId
-          } else if (recipientType === 'guest' && recipientId) {
-            logData.guestId = recipientId
-          } else if (recipientType === 'professor' && recipientId) {
-            logData.professorId = recipientId
-          }
-          
-          await prisma.emailLog.create({ data: logData })
-        }
-        
-        results.push({ 
-          email: to, 
-          success: true, 
-          messageId: response.body?.message_id 
-        })
-        
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error: any) {
-        console.error(`MailerSend Error for ${to}:`, error)
-        results.push({ email: to, success: false, error: error.message })
+        console.error(`MailerSend Error for ${to}:`, error);
+        results.push({ email: to, success: false, error: error.message });
       }
     }
 
-    const successCount = results.filter(r => r.success).length
+    const successCount = results.filter(r => r.success).length;
+    const failedCount = results.filter(r => !r.success).length;
+
     return {
       success: true,
-      message: `${successCount} emails sent successfully`,
+      message: `${successCount} emails sent successfully, ${failedCount} failed`,
       data: results,
-    }
+    };
   } catch (error: any) {
-    console.error('MailerSend Bulk Error:', error)
+    console.error('MailerSend Bulk Error:', error);
     return {
       success: false,
       message: 'Failed to send emails',
       error: error.message,
-    }
+    };
   }
 }
 
@@ -87,9 +62,9 @@ export async function sendTestEmail(to: string) {
     const sentFrom = new Sender(
       process.env.MAILERSEND_FROM_EMAIL!,
       process.env.MAILERSEND_FROM_NAME || "College System"
-    )
+    );
 
-    const recipients = [new Recipient(to, "Test Recipient")]
+    const recipients = [new Recipient(to, "Test Recipient")];
 
     const emailParams = new EmailParams()
       .setFrom(sentFrom)
@@ -99,22 +74,22 @@ export async function sendTestEmail(to: string) {
         <h1>✅ Test Email Success!</h1>
         <p>Your MailerSend integration is working perfectly!</p>
         <p>🔄 System switched from SendGrid to MailerSend successfully.</p>
-        <p>🎯 Ready to send bulk invitations with analytics!</p>
-      `)
+        <p>🎯 Ready to send bulk invitations!</p>
+      `);
 
-    const response = await mailerSend.email.send(emailParams)
+    const response = await mailerSend.email.send(emailParams);
     
     return {
       success: true,
       message: 'Test email sent successfully',
       data: response
-    }
+    };
   } catch (error: any) {
-    console.error('MailerSend Test Error:', error)
+    console.error('MailerSend Test Error:', error);
     return {
       success: false,
       message: 'Test email failed',
       error: error.message,
-    }
+    };
   }
 }
