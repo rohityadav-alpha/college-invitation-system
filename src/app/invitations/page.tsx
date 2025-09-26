@@ -287,6 +287,7 @@ export default function InvitationsPage() {
                 <button
                   onClick={syncMailerSend}
                   className="text-sm text-indigo-700 font-medium hover:underline"
+                   disabled={loading}
                 >
                   Sync Analytics
                 </button>
