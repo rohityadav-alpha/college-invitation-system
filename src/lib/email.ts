@@ -1,146 +1,120 @@
-// src/lib/email.ts
+// src\lib\email.ts
+import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend'
+import { prisma } from '@/lib/prisma'
 
-import sgMail from '@sendgrid/mail'
-
-// Initialize SendGrid
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-} else {
-  console.warn('SENDGRID_API_KEY not found in environment variables')
-}
+const mailerSend = new MailerSend({
+  apiKey: process.env.MAILERSEND_API_KEY!,
+})
 
 export async function sendBulkEmails(
-  emails: { to: string; name: string }[],
+  emails: { to: string; name: string; recipientId?: string; recipientType?: string }[],
   subject: string,
-  content: string
+  content: string,
+  invitationId?: string
 ) {
-  // Validation checks
-  if (!process.env.SENDGRID_API_KEY) {
-    return {
-      success: false,
-      message: 'SendGrid API key not configured',
-      error: 'SENDGRID_API_KEY missing'
-    }
-  }
-
-  if (!process.env.SENDGRID_FROM_EMAIL) {
-    return {
-      success: false,
-      message: 'SendGrid from email not configured',
-      error: 'SENDGRID_FROM_EMAIL missing'
-    }
-  }
-
-  if (!emails.length) {
-    return {
-      success: false,
-      message: 'No emails to send',
-      error: 'Empty emails array'
-    }
-  }
-
-  const messages = emails.map(({ to, name }) => ({
-    to: to.trim(),
-    from: {
-      email: process.env.SENDGRID_FROM_EMAIL!,
-      name: 'College Invitation System'
-    },
-    subject: subject.trim(),
-    html: content.replace(/{{name}}/g, name || 'Dear Recipient'),
-    text: content.replace(/{{name}}/g, name || 'Dear Recipient').replace(/<[^>]*>/g, ''), // Strip HTML for text version
-  }))
-
   try {
-    console.log(`Sending ${emails.length} emails via SendGrid...`)
-    const response = await sgMail.send(messages)
+    const sentFrom = new Sender(
+      process.env.MAILERSEND_FROM_EMAIL!,
+      process.env.MAILERSEND_FROM_NAME || "College Invitation System"
+    )
+
+    const results = []
     
-    console.log(`✅ Successfully sent ${emails.length} emails`)
+    for (const { to, name, recipientId, recipientType } of emails) {
+      try {
+        const recipients = [new Recipient(to, name)]
+        
+        const emailParams = new EmailParams()
+          .setFrom(sentFrom)
+          .setTo(recipients)
+          .setSubject(subject.replace(/\{name\}/g, name))
+          .setHtml(content.replace(/\{name\}/g, name))
+
+        const response = await mailerSend.email.send(emailParams)
+        
+        // Store in your existing EmailLog schema
+        if (response && response.body && invitationId) {
+          const logData: any = {
+            invitationId,
+            messageId: response.body.message_id || null,
+            recipientType: recipientType || 'unknown',
+            status: 'sent'
+          }
+          
+          // Set the appropriate foreign key based on recipient type
+          if (recipientType === 'student' && recipientId) {
+            logData.studentId = recipientId
+          } else if (recipientType === 'guest' && recipientId) {
+            logData.guestId = recipientId
+          } else if (recipientType === 'professor' && recipientId) {
+            logData.professorId = recipientId
+          }
+          
+          await prisma.emailLog.create({ data: logData })
+        }
+        
+        results.push({ 
+          email: to, 
+          success: true, 
+          messageId: response.body?.message_id 
+        })
+        
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } catch (error: any) {
+        console.error(`MailerSend Error for ${to}:`, error)
+        results.push({ email: to, success: false, error: error.message })
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length
     return {
       success: true,
-      message: `${emails.length} emails sent successfully`,
-      data: response,
-      count: emails.length
+      message: `${successCount} emails sent successfully`,
+      data: results,
     }
   } catch (error: any) {
-    console.error('❌ SendGrid Error:', {
-      message: error.message,
-      code: error.code,
-      response: error.response?.body || 'No response body'
-    })
-    
+    console.error('MailerSend Bulk Error:', error)
     return {
       success: false,
       message: 'Failed to send emails',
       error: error.message,
-      details: error.response?.body
     }
   }
 }
 
-export async function sendTestEmail(to: string, name?: string) {
-  if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_FROM_EMAIL) {
-    return {
-      success: false,
-      message: 'SendGrid not configured',
-      error: 'Missing API key or from email'
-    }
-  }
-
-  const msg = {
-    to: to.trim(),
-    from: {
-      email: process.env.SENDGRID_FROM_EMAIL!,
-      name: 'College Invitation System'
-    },
-    subject: 'Test Email - College Invitation System',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #4F46E5;">Test Email Successful!</h2>
-        <p>Hello ${name || 'there'},</p>
-        <p>Your email service is working perfectly! ✅</p>
-        <p>This test email confirms that:</p>
-        <ul>
-          <li>SendGrid API is properly configured</li>
-          <li>Email delivery is functioning</li>
-          <li>Your invitation system is ready to use</li>
-        </ul>
-        <p>Best regards,<br>College Invitation System</p>
-      </div>
-    `,
-    text: `Test Email Successful!\n\nHello ${name || 'there'},\n\nYour email service is working perfectly! ✅\n\nThis test email confirms that SendGrid API is properly configured and email delivery is functioning.\n\nBest regards,\nCollege Invitation System`
-  }
-
+export async function sendTestEmail(to: string) {
   try {
-    console.log('Sending test email to:', to)
-    await sgMail.send(msg)
-    console.log('✅ Test email sent successfully')
+    const sentFrom = new Sender(
+      process.env.MAILERSEND_FROM_EMAIL!,
+      process.env.MAILERSEND_FROM_NAME || "College System"
+    )
+
+    const recipients = [new Recipient(to, "Test Recipient")]
+
+    const emailParams = new EmailParams()
+      .setFrom(sentFrom)
+      .setTo(recipients)
+      .setSubject("Test Email - College Invitation System")
+      .setHtml(`
+        <h1>✅ Test Email Success!</h1>
+        <p>Your MailerSend integration is working perfectly!</p>
+        <p>🔄 System switched from SendGrid to MailerSend successfully.</p>
+        <p>🎯 Ready to send bulk invitations with analytics!</p>
+      `)
+
+    const response = await mailerSend.email.send(emailParams)
     
     return {
       success: true,
       message: 'Test email sent successfully',
-      recipient: to
+      data: response
     }
   } catch (error: any) {
-    console.error('❌ Test Email Error:', {
-      message: error.message,
-      code: error.code,
-      response: error.response?.body
-    })
-    
+    console.error('MailerSend Test Error:', error)
     return {
       success: false,
       message: 'Test email failed',
       error: error.message,
-      details: error.response?.body
     }
   }
-}
-
-export async function sendSingleEmail(
-  to: string,
-  subject: string,
-  content: string,
-  name?: string
-) {
-  return sendBulkEmails([{ to, name: name || 'Recipient' }], subject, content)
 }
