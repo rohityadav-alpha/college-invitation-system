@@ -1,3 +1,4 @@
+
 <div align="center">
 
 # 🎓 College Invitation System
@@ -51,11 +52,11 @@ A comprehensive **AI-powered invitation management system** designed specificall
 ### 📧 Multi-Channel Communication
 | Channel | Features |
 |---------|----------|
-| **📧 Email** | Bulk campaigns, HTML templates, delivery tracking |
+| **📧 Email** | Bulk campaigns, HTML templates, delivery tracking, real-time analytics |
 | **📱 WhatsApp** | Auto-generated links, phone number formatting |
 | **📲 SMS** | httpSMS integration, rate limiting, delivery status |
 | **🚀 Combo Mode** | Send across all channels simultaneously |
-| **📊 Analytics** | Open rates, delivery status, campaign performance |
+| **📊 Analytics** | Open rates, click rates, delivery status, campaign performance |
 
 ### 👥 Comprehensive User Management
 | Category | Management Features |
@@ -67,12 +68,13 @@ A comprehensive **AI-powered invitation management system** designed specificall
 | **🔍 Advanced Search** | Filter by course, year, department, category |
 
 ### 📊 Advanced Features
-- **📈 Analytics Dashboard** - Real-time campaign performance
+- **📈 Analytics Dashboard** - Real-time campaign performance with MailerSend analytics
 - **📱 Responsive Design** - Mobile-first approach
 - **🔐 Admin Authentication** - Secure access control
 - **🎨 Professional UI** - Clean, modern interface with icons
 - **⚡ Performance Optimized** - Fast loading, efficient queries
 - **📂 Bulk Operations** - CSV import/export, mass updates
+- **🔄 Webhook Integration** - Real-time email event tracking
 
 ---
 
@@ -86,7 +88,7 @@ A comprehensive **AI-powered invitation management system** designed specificall
 | **Backend** | Next.js API Routes, Prisma ORM |
 | **Database** | PostgreSQL (Neon Serverless) |
 | **AI Integration** | Google Gemini AI |
-| **Email Service** | SendGrid |
+| **Email Service** | MailerSend |
 | **SMS Service** | httpSMS |
 | **Authentication** | Custom Admin System |
 | **Deployment** | Vercel |
@@ -192,30 +194,37 @@ GEMINI_API_KEY="AIzaSyC-your_actual_gemini_api_key_here"
 
 ---
 
-### **3. 📧 SendGrid Email Setup**
+### **3. 📧 MailerSend Email Setup**
 
-#### **Create SendGrid Account:**
-1. **Visit:** [https://sendgrid.com](https://sendgrid.com)
-2. **Sign Up:** Free account (100 emails/day)
+#### **Create MailerSend Account:**
+1. **Visit:** [https://mailersend.com](https://mailersend.com)
+2. **Sign Up:** Free account (12,000 emails/month)
 3. **Verify Email:** Confirm your email address
-4. **Domain Authentication:**
-   - Go to Settings → Sender Authentication
-   - Authenticate your domain (or use single sender verification)
+4. **Domain Verification:**
+   - Go to Email Domains
+   - Add your domain (or use their trial domain)
+   - Complete DNS verification
 
 #### **Get API Key:**
-1. **Settings → API Keys**
-2. **Create API Key:**
+1. **Go to:** API Tokens section
+2. **Create API Token:**
    - Name: `College Invitation System`
-   - Permissions: Full Access or Mail Send only
-3. **Copy API Key** (starts with `SG.`)
+   - Scopes: Email Send (required)
+   - Generate token
+3. **Copy API Token** (starts with `mlsnd_`)
+
+#### **Setup Sender Identity:**
+1. **Go to:** Email Domains or use trial domain
+2. **Get From Email:** Use format like `noreply@trial-xxx.mlsender.net`
+3. **Or add custom domain** for professional emails
 
 #### **Add to .env.local:**
 ```
-SENDGRID_API_KEY="SG.your_actual_sendgrid_api_key_here"
-SENDGRID_FROM_EMAIL="noreply@yourdomain.com"
+MAILERSEND_API_KEY="mlsnd_your_actual_mailersend_api_key_here"
+MAILERSEND_FROM_EMAIL="noreply@trial-xxx.mlsender.net"
 ```
 
-**⚠️ Important:** Replace `noreply@yourdomain.com` with verified sender email.
+**⚠️ Important:** For production, use your verified domain email.
 
 ---
 
@@ -272,9 +281,9 @@ DATABASE_URL="postgresql://username:password@ep-xyz.us-east-2.aws.neon.tech/data
 # ===== AI CONFIGURATION =====
 GEMINI_API_KEY="AIzaSyC-your_actual_gemini_api_key_here"
 
-# ===== EMAIL CONFIGURATION =====
-SENDGRID_API_KEY="SG.your_actual_sendgrid_api_key_here"
-SENDGRID_FROM_EMAIL="noreply@yourdomain.com"
+# ===== EMAIL CONFIGURATION (MailerSend) =====
+MAILERSEND_API_KEY="mlsnd_your_actual_mailersend_api_key_here"
+MAILERSEND_FROM_EMAIL="noreply@trial-xxx.mlsender.net"
 
 # ===== SMS CONFIGURATION (Optional) =====
 HTTPSMS_API_KEY="httpsms_your_api_key_here"
@@ -348,8 +357,8 @@ Professor {
   createdAt: DateTime
 }
 
--- Invitations & Logs Tables
-Invitation, EmailLog, etc.
+-- Communication Tables
+Invitation, EmailLog, SMSLog, WhatsAppLog
 ```
 
 ---
@@ -393,6 +402,7 @@ college-invitation-system/
 │   │   │   ├── 📁 professors/       # Professor management
 │   │   │   ├── 📁 generate-*/       # AI content generation
 │   │   │   ├── 📁 send-*/           # Communication APIs
+│   │   │   ├── 📁 webhooks/         # MailerSend webhooks
 │   │   │   └── 📁 admin/            # Authentication
 │   │   ├── 📁 students/             # Student management pages
 │   │   ├── 📁 guests/               # Guest management pages
@@ -409,7 +419,7 @@ college-invitation-system/
 │   ├── 📁 hooks/                    # Custom React hooks
 │   └── 📁 lib/                      # Utility functions
 │       ├── prisma.ts                # Database client
-│       └── email.ts                 # Email utilities
+│       └── email.ts                 # MailerSend utilities
 ├── 📁 prisma/                       # Database schema
 │   └── schema.prisma                # Prisma schema file
 ├── 📁 public/                       # Static assets
@@ -460,17 +470,20 @@ POST /api/generate-sms        # Generate SMS content
 
 ### **Communication**
 ```
-POST /api/send-bulk-email-enhanced    # Send bulk emails
+POST /api/send-bulk-email-enhanced    # Send bulk emails via MailerSend
 POST /api/send-whatsapp-web          # Generate WhatsApp links
 POST /api/send-phone-sms             # Send SMS via phone
 POST /api/send-combo-bulk            # Multi-channel campaign
 ```
 
-### **Analytics**
+### **Analytics & Webhooks**
 ```
-GET  /api/invitations          # Get invitation history
-POST /api/invitations          # Create invitation record
-GET  /api/invitations/[id]     # Get specific invitation
+GET  /api/invitations               # Get invitation history
+POST /api/invitations               # Create invitation record
+GET  /api/invitations/[id]          # Get specific invitation
+POST /api/webhooks/mailersend       # MailerSend webhook handler
+GET  /api/email-analytics           # Email analytics data
+POST /api/sync-mailersend-analytics # Sync real-time analytics
 ```
 
 ---
@@ -500,7 +513,7 @@ const generateEmail = async () => {
 }
 ```
 
-### **2. Multi-Channel Campaign**
+### **2. Multi-Channel Campaign with MailerSend**
 
 ```
 const sendComboCampaign = async () => {
@@ -508,35 +521,30 @@ const sendComboCampaign = async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      emailSubject: 'Workshop Invitation',
-      emailContent: '<h1>Join our React.js Workshop</h1>',
-      whatsappMessage: 'Hi {{name}}! Join our React.js workshop...',
+      title: 'Workshop Invitation',
+      subject: 'Join Our React.js Workshop',
+      content: '<h1>Join our React.js Workshop</h1><p>Date: Dec 25, 2025</p>',
       smsMessage: 'Workshop alert: React.js Masterclass on Dec 25',
       studentIds: ['student1', 'student2'],
-      guestIds: ['guest1'],
-      sendMethod: 'combo' // email + whatsapp + sms
+      guestIds: ['guest1']
     })
   })
   
   const result = await response.json()
-  console.log(`Campaign sent to ${result.data.totalRecipients} recipients`)
+  console.log(`Campaign sent: ${result.emailResults.successCount} emails, ${result.smsResults.successCount} SMS`)
 }
 ```
 
-### **3. Bulk User Import**
+### **3. MailerSend Analytics Sync**
 
 ```
-const importStudents = async (csvFile) => {
-  const formData = new FormData()
-  formData.append('file', csvFile)
-  
-  const response = await fetch('/api/students/import', {
-    method: 'POST',
-    body: formData
+const syncEmailAnalytics = async () => {
+  const response = await fetch('/api/sync-mailersend-analytics', {
+    method: 'POST'
   })
   
   const result = await response.json()
-  console.log(`Imported ${result.imported} students`)
+  console.log(`Synced ${result.updated} email activities`)
 }
 ```
 
@@ -571,8 +579,8 @@ Add these in Vercel Dashboard → Settings → Environment Variables:
 ```
 DATABASE_URL=your_neon_database_url
 GEMINI_API_KEY=your_gemini_api_key
-SENDGRID_API_KEY=your_sendgrid_api_key
-SENDGRID_FROM_EMAIL=your_verified_email
+MAILERSEND_API_KEY=your_mailersend_api_key
+MAILERSEND_FROM_EMAIL=your_verified_email
 HTTPSMS_API_KEY=your_httpsms_key
 HTTPSMS_PHONE_ID=your_phone_number
 ADMIN_EMAIL=your_admin_email
@@ -581,21 +589,18 @@ NEXTAUTH_SECRET=your_32_char_secret
 NEXTAUTH_URL=https://your-domain.vercel.app
 ```
 
-#### **Step 4: Deploy**
+#### **Step 4: Setup MailerSend Webhooks**
+
+1. **In MailerSend Dashboard:**
+   - Go to Webhooks section
+   - Add webhook URL: `https://your-domain.vercel.app/api/webhooks/mailersend`
+   - Select events: `sent`, `delivered`, `opened`, `clicked`, `bounced`, `spam_complaints`
+
+#### **Step 5: Deploy**
 
 - Click **Deploy**
 - Wait for build completion
 - Visit your live application!
-
-### **Build Locally**
-
-```
-# Build for production
-npm run build
-
-# Test production build locally
-npm run start
-```
 
 ---
 
@@ -619,55 +624,54 @@ npx prisma migrate reset
 </details>
 
 <details>
+<summary><strong>MailerSend Email Issues</strong></summary>
+
+```
+# Verify API key format (should start with "mlsnd_")
+# Check sender email is verified in MailerSend
+# Ensure domain verification is complete
+# Check webhook URL is accessible
+# Test email sending in MailerSend dashboard
+```
+</details>
+
+<details>
 <summary><strong>Gemini AI Not Working</strong></summary>
 
 ```
 # Verify API key format (should start with "AIza")
 # Check Google AI Studio quotas
 # Ensure billing is enabled for production usage
-# Test with: curl -H "Authorization: Bearer $GEMINI_API_KEY" https://ai.google.dev/
 ```
 </details>
 
 <details>
-<summary><strong>SendGrid Email Issues</strong></summary>
+<summary><strong>Webhook Integration Issues</strong></summary>
 
 ```
-# Verify API key starts with "SG."
-# Check sender email is verified in SendGrid
-# Ensure domain authentication is complete
-# Test SMTP connectivity on port 587
-```
-</details>
-
-<details>
-<summary><strong>httpSMS Not Working</strong></summary>
-
-```
-# Ensure httpSMS app is running on Android phone
-# Check phone has internet connection
-# Verify API key format (starts with "httpsms_")
-# Confirm phone number format (+countrycode+number)
+# Ensure webhook URL is publicly accessible
+# Check webhook signature verification
+# Verify webhook events are selected in MailerSend
+# Test webhook with MailerSend's webhook tester
 ```
 </details>
 
-<details>
-<summary><strong>Build/Deploy Issues</strong></summary>
+---
 
-```
-# Clear Next.js cache
-rm -rf .next
+## 📊 MailerSend Features
 
-# Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
+### **Email Analytics:**
+- **Real-time Tracking:** Opens, clicks, bounces, spam complaints
+- **Delivery Status:** Sent, delivered, failed tracking
+- **Webhook Integration:** Automatic status updates
+- **Advanced Analytics:** Click-through rates, open rates
 
-# Check TypeScript errors
-npm run type-check
-
-# Verify environment variables are set
-```
-</details>
+### **Benefits over Traditional SMTP:**
+- **Higher Deliverability:** 99%+ delivery rates
+- **Real-time Analytics:** Instant email tracking
+- **Professional Templates:** Built-in email templates
+- **Domain Reputation:** Dedicated IP options
+- **Webhook Support:** Real-time event notifications
 
 ---
 
@@ -693,50 +697,6 @@ We welcome contributions! Please follow these guidelines:
 - ✅ Ensure responsive design for new UI components
 - ✅ Test with different user roles and permissions
 - ✅ Update documentation if adding new features
-
-### **Pull Request Template:**
-
-```
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature  
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-- [ ] Tested locally
-- [ ] All existing tests pass
-- [ ] Added new tests if applicable
-
-## Screenshots (if applicable)
-Add screenshots of UI changes
-```
-
----
-
-## 📊 Performance & Analytics
-
-### **System Metrics:**
-
-| **Metric** | **Value** | **Target** |
-|:-----------|:---------:|:----------:|
-| **Page Load Speed** | <2s | <3s |
-| **API Response Time** | <500ms | <1s |
-| **Database Queries** | Optimized | <100ms |
-| **Build Size** | <2MB | <5MB |
-| **Lighthouse Score** | 95+ | 90+ |
-| **TypeScript Coverage** | 100% | 95%+ |
-
-### **Monitoring & Logging:**
-
-- **Error Tracking:** Built-in error boundaries
-- **Performance:** Next.js Analytics
-- **Database:** Prisma query logging
-- **Email:** SendGrid delivery analytics
-- **SMS:** httpSMS delivery status
 
 ---
 
@@ -767,14 +727,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-### **Privacy & Data Protection**
-
-This system handles personal information (emails, phone numbers). Ensure compliance with:
-- **GDPR** (European Union)
-- **CCPA** (California)
-- **Local privacy laws** in your jurisdiction
-- Implement proper data encryption and secure storage
 
 ---
 
@@ -809,7 +761,7 @@ Special thanks to the incredible open-source community:
 - 🎨 **Tailwind CSS** - For the utility-first CSS framework
 - 🗄️ **Prisma Team** - For the fantastic database toolkit
 - 💙 **TypeScript** - For type-safe JavaScript development
-- 📧 **SendGrid** - For reliable email delivery service
+- 📧 **MailerSend** - For reliable email delivery and analytics
 - 📱 **httpSMS** - For SMS integration capabilities
 - 🌟 **Open Source Community** - For continuous inspiration and support
 
@@ -818,7 +770,7 @@ Special thanks to the incredible open-source community:
 - **Neon** - Serverless PostgreSQL database
 - **Vercel** - Deployment and hosting platform
 - **Google AI** - Gemini AI for content generation
-- **SendGrid** - Email delivery service
+- **MailerSend** - Email delivery and analytics service
 - **httpSMS** - SMS gateway service
 
 ---
