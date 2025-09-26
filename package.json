@@ -14,7 +14,6 @@
     "@sendgrid/mail": "^8.1.5",
     "@types/twilio": "^3.19.2",
     "lucide-react": "^0.544.0",
-    "mailersend": "^2.6.0",
     "next": "^15.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",

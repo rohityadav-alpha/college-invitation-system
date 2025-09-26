@@ -1,6 +1,4 @@
-// src/app/api/send-combo-bulk/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { sendBulkEmails } from '@/lib/email'
 
 // Build-safe configuration
 export const runtime = 'nodejs'
@@ -9,6 +7,7 @@ export const dynamic = 'force-dynamic'
 // Dynamic service initialization
 let servicesInitialized = false
 let prisma: any = null
+let sgMail: any = null
 
 const initializeServices = async () => {
   if (servicesInitialized) return
@@ -19,7 +18,18 @@ const initializeServices = async () => {
       const { prisma: p } = await import('@/lib/prisma')
       prisma = p
     }
-    
+
+    // Initialize SendGrid if available
+    if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.')) {
+      try {
+        const sg = await import('@sendgrid/mail')
+        sgMail = sg.default
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+      } catch (error) {
+        console.log('SendGrid not available:', error)
+      }
+    }
+
     servicesInitialized = true
   } catch (error) {
     console.error('Service initialization error:', error)
@@ -27,12 +37,12 @@ const initializeServices = async () => {
 }
 
 export async function GET() {
-  return NextResponse.json({
+  return NextResponse.json({ 
     status: 'ok',
     message: 'Send Combo Bulk API is running',
     services: {
       database: !!process.env.DATABASE_URL,
-      mailersend: !!process.env.MAILERSEND_API_KEY,
+      sendgrid: !!(process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.')),
       httpsms: !!(process.env.HTTPSMS_API_KEY && process.env.HTTPSMS_PHONE_ID)
     }
   })
@@ -41,7 +51,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await initializeServices()
-    
+
     if (!prisma) {
       return NextResponse.json(
         { error: 'Database service not available' },
@@ -51,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const {
       emailSubject,
-      emailContent,
+      emailContent, 
       whatsappMessage,
       smsMessage,
       studentIds = [],
@@ -75,10 +85,12 @@ export async function POST(request: NextRequest) {
         where: { id: { in: studentIds } },
         select: { id: true, name: true, email: true, phone: true }
       }).catch(() => []) : [],
+      
       guestIds.length > 0 ? prisma.guest.findMany({
         where: { id: { in: guestIds } },
         select: { id: true, name: true, email: true, phone: true }
       }).catch(() => []) : [],
+      
       professorIds.length > 0 ? prisma.professor.findMany({
         where: { id: { in: professorIds } },
         select: { id: true, name: true, email: true, phone: true }
@@ -110,47 +122,48 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to create invitation record:', error)
     }
 
-    // Send emails with MailerSend
+    // Send emails with SendGrid only
     let emailResults = { sent: 0, failed: 0, errors: [] as any[] }
-    if ((sendMethod === 'email' || sendMethod === 'combo') && emailSubject && emailContent) {
-      try {
-        const emailList = allRecipients.map(recipient => ({
-          to: recipient.email,
-          name: recipient.name
-        }))
+    if ((sendMethod === 'email' || sendMethod === 'combo') && emailSubject && emailContent && sgMail) {
+      for (const recipient of allRecipients) {
+        try {
+          const personalizedSubject = emailSubject.replace(/\{\{name\}\}/g, recipient.name)
+          const personalizedContent = emailContent.replace(/\{\{name\}\}/g, recipient.name)
 
-        const result = await sendBulkEmails(
-          emailList,
-          emailSubject,
-          emailContent
-        )
+          await sgMail.send({
+            to: recipient.email,
+            from: process.env.SENDGRID_FROM_EMAIL || 'noreply@example.com',
+            subject: personalizedSubject,
+            html: personalizedContent,
+            trackingSettings: {
+              clickTracking: { enable: false },
+              openTracking: { enable: false }
+            }
+          })
 
-        if (result.success) {
-          emailResults.sent = result.data.filter((r: any) => r.success).length
-          emailResults.failed = result.data.filter((r: any) => !r.success).length
-          emailResults.errors = result.data.filter((r: any) => !r.success).map((r: any) => ({
-            email: r.email,
-            error: r.error
-          }))
-        } else {
-          emailResults.failed = allRecipients.length
-          emailResults.errors = [{ general: result.error }]
+          emailResults.sent++
+          await new Promise(resolve => setTimeout(resolve, 100))
+        } catch (error: unknown) {
+          const err = error as Error
+          emailResults.failed++
+          emailResults.errors.push({
+            name: recipient.name,
+            email: recipient.email,
+            error: err.message
+          })
         }
-      } catch (error: any) {
-        emailResults.failed = allRecipients.length
-        emailResults.errors = [{ general: error.message }]
       }
     }
 
     // Generate WhatsApp links
-    let whatsappResults = { sent: 0, links: [] as any[] }
+    let whatsappResults = { sent: 0, links: [] as string[] }
     if ((sendMethod === 'whatsapp' || sendMethod === 'combo') && whatsappMessage) {
       for (const recipient of allRecipients) {
         try {
           const personalizedMessage = whatsappMessage.replace(/\{\{name\}\}/g, recipient.name)
           const encodedMessage = encodeURIComponent(personalizedMessage)
-          let whatsappLink = ''
           
+          let whatsappLink = ''
           if (recipient.phone) {
             const cleanPhone = recipient.phone.replace(/\D/g, '')
             const formattedPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone
@@ -158,12 +171,12 @@ export async function POST(request: NextRequest) {
           } else {
             whatsappLink = `https://wa.me/?text=${encodedMessage}`
           }
-
+          
           whatsappResults.links.push({
             name: recipient.name,
             phone: recipient.phone,
             link: whatsappLink
-          })
+          } as any)
           whatsappResults.sent++
         } catch (error) {
           // Silent fail for WhatsApp links
@@ -173,7 +186,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Combo campaign completed with MailerSend!',
+      message: 'Combo campaign completed!',
       data: {
         totalRecipients: allRecipients.length,
         invitationId,
