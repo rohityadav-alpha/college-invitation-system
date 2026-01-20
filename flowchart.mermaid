@@ -1,0 +1,176 @@
+# College Invitation System Flow
+```mermaid
+flowchart TD
+    %% Authentication Layer
+    subgraph AUTH["🔐 Authentication Layer"]
+        AdminProtection["AdminProtection.tsx<br/>Custom Authentication"]
+        AuthHook["useAuth.ts<br/>Authentication Hook"]
+        AdminLogin["/api/admin/login<br/>Admin Login API"]
+    end
+
+    %% Frontend Pages
+    subgraph PAGES["📱 Frontend Pages"]
+        Dashboard["Dashboard<br/>/dashboard<br/>Central Hub"]
+        Students["Students<br/>/students<br/>Student Management"]
+        Guests["Guests<br/>/guests<br/>Guest Management"]
+        Professors["Professors<br/>/professors<br/>Professor Management"]
+        Compose["Compose<br/>/compose<br/>Message Composition"]
+        Invitations["Invitations<br/>/invitations<br/>History & Analytics"]
+    end
+
+    %% Core APIs - Management
+    subgraph MGMT_API["🔧 Management APIs"]
+        StudentsAPI["/api/students<br/>CRUD Operations"]
+        StudentsId["/api/students/[id]<br/>Individual Student"]
+        StudentsExport["/api/students/export<br/>Export Data"]
+        StudentsImport["/api/students/import<br/>Import Data"]
+        StudentsTestEmail["/api/students/test-email<br/>Test Email"]
+        StudentsTestSMS["/api/students/test-phone-sms<br/>Test SMS"]
+        
+        GuestsAPI["/api/guests<br/>CRUD Operations"]
+        GuestsId["/api/guests/[id]<br/>Individual Guest"]
+        GuestsExport["/api/guests/export<br/>Export Data"]
+        GuestsImport["/api/guests/import<br/>Import Data"]
+        
+        ProfessorsAPI["/api/professors<br/>CRUD Operations"]
+        ProfessorsId["/api/professors/[id]<br/>Individual Professor"]
+        ProfessorsExport["/api/professors/export<br/>Export Data"]
+        ProfessorsImport["/api/professors/import<br/>Import Data"]
+    end
+
+    %% Messaging APIs
+    subgraph MSG_API["📨 Messaging APIs"]
+        GenerateInv["/api/generate-invitation<br/>Create Invitations"]
+        GenerateSMS["/api/generate-sms<br/>Generate SMS Content"]
+        GenerateWA["/api/generate-whatsapp<br/>Generate WhatsApp Content"]
+        
+        BulkEmail["/api/send-bulk-email<br/>Basic Bulk Email"]
+        BulkEmailEnh["/api/send-bulk-email-enhanced<br/>Enhanced Bulk Email"]
+        ComboBulk["/api/send-combo-bulk<br/>Multi-channel Bulk"]
+        RetryEmails["/api/retry-failed-emails<br/>Retry Failed Emails"]
+        
+        PhoneSMS["/api/send-phone-sms<br/>Send SMS Messages"]
+        WhatsAppWeb["/api/send-whatsapp-web<br/>Send WhatsApp Messages"]
+        
+        SMSTemplates["/api/sms-templates<br/>SMS Template Management"]
+        WATemplates["/api/whatsapp-templates<br/>WhatsApp Templates"]
+    end
+
+    %% Analytics & History APIs
+    subgraph ANALYTICS_API["📊 Analytics APIs"]
+        InvitationsAPI["/api/invitations<br/>Invitation History"]
+        InvitationsId["/api/invitations/[id]<br/>Individual Invitation"]
+    end
+
+    %% Database Layer
+    subgraph DATABASE["🗄️ Database Layer"]
+        Prisma["prisma.ts<br/>Database Connection"]
+        DB[("PostgreSQL/MySQL<br/>Database")]
+    end
+
+    %% Library Components
+    subgraph LIBRARY["📚 Library Components"]
+        EmailLib["email.ts<br/>Email Utilities"]
+        Types["types.ts<br/>TypeScript Definitions"]
+        Navigation["Navigation.tsx<br/>UI Navigation"]
+        AppIcons["AppIcons.tsx<br/>Icon Components"]
+    end
+
+    %% External Services
+    subgraph EXTERNAL["☁️ External Services"]
+        SendGrid["SendGrid<br/>Email Service"]
+        HttpSMS["httpSMS<br/>SMS Gateway"]
+        WhatsApp["WhatsApp Web API<br/>Messaging Service"]
+    end
+
+    %% Authentication Flow
+    AdminProtection --> AdminLogin
+    AdminLogin --> AuthHook
+    AuthHook --> Dashboard
+
+    %% Dashboard Connections
+    Dashboard --> Students
+    Dashboard --> Guests
+    Dashboard --> Professors
+    Dashboard --> Compose
+    Dashboard --> Invitations
+
+    %% Management Page to API Connections
+    Students --> StudentsAPI
+    Students --> StudentsExport
+    Students --> StudentsImport
+    StudentsAPI --> StudentsId
+    Students --> StudentsTestEmail
+    Students --> StudentsTestSMS
+
+    Guests --> GuestsAPI
+    Guests --> GuestsExport  
+    Guests --> GuestsImport
+    GuestsAPI --> GuestsId
+
+    Professors --> ProfessorsAPI
+    Professors --> ProfessorsExport
+    Professors --> ProfessorsImport
+    ProfessorsAPI --> ProfessorsId
+
+    %% Compose Page Connections
+    Compose --> GenerateInv
+    Compose --> GenerateSMS
+    Compose --> GenerateWA
+    Compose --> SMSTemplates
+    Compose --> WATemplates
+    
+    Compose --> BulkEmail
+    Compose --> BulkEmailEnh
+    Compose --> ComboBulk
+    Compose --> PhoneSMS
+    Compose --> WhatsAppWeb
+
+    %% Invitations Page Connections
+    Invitations --> InvitationsAPI
+    Invitations --> RetryEmails
+    InvitationsAPI --> InvitationsId
+
+    %% Database Connections
+    StudentsAPI --> Prisma
+    GuestsAPI --> Prisma
+    ProfessorsAPI --> Prisma
+    GenerateInv --> Prisma
+    InvitationsAPI --> Prisma
+    Prisma --> DB
+
+    %% External Service Connections
+    BulkEmail --> EmailLib
+    BulkEmailEnh --> EmailLib
+    ComboBulk --> EmailLib
+    EmailLib --> SendGrid
+    
+    PhoneSMS --> HttpSMS
+    GenerateSMS --> HttpSMS
+    
+    WhatsAppWeb --> WhatsApp
+    GenerateWA --> WhatsApp
+
+    %% Library Usage
+    Types -.-> StudentsAPI
+    Types -.-> GuestsAPI
+    Types -.-> ProfessorsAPI
+    Types -.-> InvitationsAPI
+    
+    Navigation -.-> Dashboard
+    AppIcons -.-> Navigation
+
+    %% Styling
+    classDef pageStyle fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
+    classDef apiStyle fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef dbStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef externalStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef authStyle fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000
+    classDef libStyle fill:#f1f8e9,stroke:#689f38,stroke-width:2px,color:#000
+
+    class Dashboard,Students,Guests,Professors,Compose,Invitations pageStyle
+    class StudentsAPI,StudentsId,StudentsExport,StudentsImport,StudentsTestEmail,StudentsTestSMS,GuestsAPI,GuestsId,GuestsExport,GuestsImport,ProfessorsAPI,ProfessorsId,ProfessorsExport,ProfessorsImport,GenerateInv,GenerateSMS,GenerateWA,BulkEmail,BulkEmailEnh,ComboBulk,RetryEmails,PhoneSMS,WhatsAppWeb,SMSTemplates,WATemplates,InvitationsAPI,InvitationsId apiStyle
+    class Prisma,DB dbStyle
+    class SendGrid,HttpSMS,WhatsApp externalStyle
+    class AdminProtection,AuthHook,AdminLogin authStyle
+    class EmailLib,Types,Navigation,AppIcons libStyle

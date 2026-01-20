@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  course    String
+  year      String
+  phone     String?
+  createdAt DateTime @default(now())
+  
+  emailLogs    EmailLog[]
+  smsLogs      SMSLog[]      // 🆕 Added SMS support
+  whatsappLogs WhatsAppLog[] // 🆕 Added WhatsApp support
+  
+  @@map("students")
+}
+
+model Guest {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  organization String?
+  designation String?
+  phone       String?
+  category    String   @default("guest")
+  createdAt   DateTime @default(now())
+  
+  emailLogs    EmailLog[]
+  smsLogs      SMSLog[]      // 🆕 Added SMS support
+  whatsappLogs WhatsAppLog[] // 🆕 Added WhatsApp support
+  
+  @@map("guests")
+}
+
+model Professor {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  college     String
+  department  String
+  designation String   @default("Professor")
+  phone       String?
+  expertise   String?
+  createdAt   DateTime @default(now())
+  
+  emailLogs    EmailLog[]
+  smsLogs      SMSLog[]      // 🆕 Added SMS support
+  whatsappLogs WhatsAppLog[] // 🆕 Added WhatsApp support
+  
+  @@map("professors")
+}
+
+model Invitation {
+  id             String   @id @default(cuid())
+  title          String
+  content        String   @db.Text
+  subject        String
+  createdAt      DateTime @default(now())
+  sentCount      Int      @default(0)
+  deliveredCount Int      @default(0)
+  openedCount    Int      @default(0)
+  clickedCount   Int      @default(0)
+  failedCount    Int      @default(0)
+  
+  emailLogs    EmailLog[]
+  smsLogs      SMSLog[]      // 🆕 Added SMS support
+  whatsappLogs WhatsAppLog[] // 🆕 Added WhatsApp support
+  
+  @@map("invitations")
+}
+
+// 🔄 Keep existing EmailLog as-is
+model EmailLog {
+  id            String    @id @default(cuid())
+  studentId     String?
+  guestId       String?
+  professorId   String?
+  invitationId  String
+  recipientType String
+  status        String
+  sentAt        DateTime  @default(now())
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+  errorMessage  String?
+  messageId     String?
+  
+  student      Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guest        Guest?      @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  professor    Professor?  @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  invitation   Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  
+  @@map("email_logs")
+}
+
+// 🆕 New SMS Log Model
+model SMSLog {
+  id            String    @id @default(cuid())
+  studentId     String?
+  guestId       String?
+  professorId   String?
+  invitationId  String
+  recipientType String    // "student", "guest", "professor"
+  phoneNumber   String    // Phone number used for SMS
+  status        String    // sent, delivered, failed, pending
+  sentAt        DateTime  @default(now())
+  deliveredAt   DateTime?
+  errorMessage  String?
+  messageId     String?   // SMS provider's message ID
+  
+  student      Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guest        Guest?      @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  professor    Professor?  @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  invitation   Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  
+  @@map("sms_logs")
+}
+
+// 🆕 New WhatsApp Log Model
+model WhatsAppLog {
+  id            String    @id @default(cuid())
+  studentId     String?
+  guestId       String?
+  professorId   String?
+  invitationId  String
+  recipientType String    // "student", "guest", "professor"
+  phoneNumber   String    // Phone number used for WhatsApp
+  status        String    // sent, delivered, read, failed, pending
+  sentAt        DateTime  @default(now())
+  deliveredAt   DateTime?
+  readAt        DateTime? // WhatsApp read receipt
+  errorMessage  String?
+  messageId     String?   // WhatsApp's message ID
+  
+  student      Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guest        Guest?      @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  professor    Professor?  @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  invitation   Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  
+  @@map("whatsapp_logs")
+}
