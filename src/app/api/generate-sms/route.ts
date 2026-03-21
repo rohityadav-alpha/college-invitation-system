@@ -52,7 +52,7 @@ STRICT Requirements:
 Generate ONLY the SMS text, no additional content. Count characters carefully!
     `
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
     const result = await model.generateContent(prompt)
     const response = await result.response
     const smsMessage = response.text()

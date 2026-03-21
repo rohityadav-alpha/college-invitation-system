@@ -1,11 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventType, eventName, committeeName, venue, date, time, additionalInfo } = await request.json()
+    const {
+      eventType,
+      eventName,
+      committeeName,
+      venue,
+      date,
+      time,
+      additionalInfo,
+    } = await request.json();
 
     // Enhanced prompt with rich content requirements
     const prompt = `Create a professional, visually appealing HTML email invitation with modern styling and rich content.
@@ -17,7 +25,7 @@ Event Details:
 - Date: ${date}
 - Time: ${time}
 - Venue: ${venue}
-- Additional Information: ${additionalInfo || 'None'}
+- Additional Information: ${additionalInfo || "None"}
 
 Requirements:
 1. Use modern gradient backgrounds and attractive colors
@@ -37,27 +45,34 @@ IMPORTANT - Content Structure:
 - Include clear event details in structured format
 - End with encouraging call-to-action
 
-Generate only the HTML code with inline CSS styling:`
+Generate only the HTML code with inline CSS styling:`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    let generatedContent = response.text()
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let generatedContent = response.text();
 
     // Clean any remaining markdown
-    generatedContent = generatedContent.replace(/``````/g, '').trim()
+    generatedContent = generatedContent.replace(/``````/g, "").trim();
 
     return NextResponse.json({
       success: true,
       content: generatedContent,
-      subject: `Invitation: ${eventName} by ${committeeName}`
-    })
-
+      subject: `Invitation: ${eventName} by ${committeeName}`,
+    });
   } catch (error) {
-    console.error('AI Generation Error:', error)
-    
-    const { eventName, committeeName, eventType, date, time, venue, additionalInfo } = await request.json()
-    
+    console.error("AI Generation Error:", error);
+
+    const {
+      eventName,
+      committeeName,
+      eventType,
+      date,
+      time,
+      venue,
+      additionalInfo,
+    } = await request.json();
+
     // Enhanced fallback with rich content and better styling
     const fallbackHTML = `<!DOCTYPE html>
 <html>
@@ -107,10 +122,14 @@ Generate only the HTML code with inline CSS styling:`
                 </p>
               </div>
 
-              ${additionalInfo ? `<div style="background: #fff5f5; border: 1px solid #fed7d7; padding: 20px; border-radius: 10px; margin: 20px 0;">
+              ${
+                additionalInfo
+                  ? `<div style="background: #fff5f5; border: 1px solid #fed7d7; padding: 20px; border-radius: 10px; margin: 20px 0;">
                 <h4 style="color: #c53030; margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">📋 Additional Information:</h4>
                 <p style="color: #742a2a; margin: 0; font-size: 15px; line-height: 1.6;">${additionalInfo}</p>
-              </div>` : ''}
+              </div>`
+                  : ""
+              }
             </td>
           </tr>
           
@@ -120,18 +139,30 @@ Generate only the HTML code with inline CSS styling:`
               <div style="background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%); padding: 30px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
                 <h3 style="color: #2d3748; margin: 0 0 25px 0; font-size: 20px; text-align: center; font-weight: bold;">📅 Event Details</h3>
                 <table width="100%" cellpadding="12" cellspacing="0">
-                  ${date ? `<tr>
+                  ${
+                    date
+                      ? `<tr>
                     <td style="font-weight: bold; color: #4a5568; width: 140px; font-size: 16px; padding: 8px 0;">📅 Date:</td>
                     <td style="color: #2d3748; font-size: 16px; font-weight: 600; padding: 8px 0;">${date}</td>
-                  </tr>` : ''}
-                  ${time ? `<tr>
+                  </tr>`
+                      : ""
+                  }
+                  ${
+                    time
+                      ? `<tr>
                     <td style="font-weight: bold; color: #4a5568; width: 140px; font-size: 16px; padding: 8px 0;">⏰ Time:</td>
                     <td style="color: #2d3748; font-size: 16px; font-weight: 600; padding: 8px 0;">${time}</td>
-                  </tr>` : ''}
-                  ${venue ? `<tr>
+                  </tr>`
+                      : ""
+                  }
+                  ${
+                    venue
+                      ? `<tr>
                     <td style="font-weight: bold; color: #4a5568; width: 140px; font-size: 16px; padding: 8px 0;">📍 Venue:</td>
                     <td style="color: #2d3748; font-size: 16px; font-weight: 600; padding: 8px 0;">${venue}</td>
-                  </tr>` : ''}
+                  </tr>`
+                      : ""
+                  }
                   <tr>
                     <td style="font-weight: bold; color: #4a5568; width: 140px; font-size: 16px; padding: 8px 0;">🎪 Event Type:</td>
                     <td style="color: #2d3748; font-size: 16px; font-weight: 600; padding: 8px 0;">${eventType}</td>
@@ -174,13 +205,13 @@ Generate only the HTML code with inline CSS styling:`
     </tr>
   </table>
 </body>
-</html>`
+</html>`;
 
     return NextResponse.json({
       success: true,
       content: fallbackHTML,
       subject: `Invitation: ${eventName} by ${committeeName}`,
-      note: 'Enhanced rich content template used'
-    })
+      note: "Enhanced rich content template used",
+    });
   }
 }

@@ -55,7 +55,7 @@ Requirements:
 Generate ONLY the WhatsApp message content, no additional text or explanations.
     `
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
     const result = await model.generateContent(prompt)
     const response = await result.response
     const whatsappMessage = response.text()
