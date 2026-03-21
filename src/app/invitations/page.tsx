@@ -1,327 +1,191 @@
-// src\app\invitations\page.tsx
-
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import AdminProtection from '@/components/AdminProtection'
-import Link from 'next/link'
-import {AppIcons} from '@/components/icons/AppIcons'
-
-interface EmailLog {
-  id: string
-  status: string
-  sentAt: string
-  recipientType?: string
-  student?: {
-    name: string
-    email: string
-    course: string
-    year: string
-  }
-  guest?: {
-    name: string
-    email: string
-    organization: string
-    designation: string
-  }
-  professor?: {
-    name: string
-    email: string
-    college: string
-    department: string
-  }
-}
+import StatusBadge from '@/components/StatusBadge'
+import { motion } from 'framer-motion'
+import { BarChart2, Send, Mail, MessageSquare, Phone, Search, X, RefreshCw, Eye, ChevronRight } from 'lucide-react'
 
 interface Invitation {
-  id: string
-  title: string
-  subject: string
-  createdAt: string
-  sentCount: number
-  emailLogs: EmailLog[]
-  analytics: {
-    totalSent: number
-    delivered: number
-    opened: number
-    clicked: number
-    failed: number
-    pending: number
-    deliveryRate: string
-    openRate: string
-  }
+  id: string; title: string; status: string; type: string; createdAt: string
+  _count?: { emailLogs: number; smsLogs: number; whatsappLogs: number }
+  emailLogs?: Array<{status:string}>
+  whatsappLogs?: Array<{status:string}>
+  smsLogs?: Array<{status:string}>
+}
+
+const pageVariants = { initial:{opacity:0,y:20}, animate:{opacity:1,y:0,transition:{duration:0.3,ease:'easeOut' as const}} }
+
+const chanMap: Record<string,{icon:React.ReactNode,color:string}> = {
+  email:     {icon:<Mail size={14}/>,     color:'var(--accent)'},
+  whatsapp:  {icon:<MessageSquare size={14}/>, color:'#22c55e'},
+  sms:       {icon:<Phone size={14}/>,    color:'#f59e0b'},
 }
 
 export default function InvitationsPage() {
   const [invitations, setInvitations] = useState<Invitation[]>([])
-  const [loading, setLoading] = useState(true)
-  const [retryingId, setRetryingId] = useState<string | null>(null)
+  const [filtered, setFiltered] = useState<Invitation[]>([])
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [retrying, setRetrying] = useState(false)
 
+  useEffect(() => { fetchInvitations() }, [])
   useEffect(() => {
-    fetchInvitations()
-  }, [])
+    let f = invitations
+    if (search) f = f.filter(inv => inv.title.toLowerCase().includes(search.toLowerCase()))
+    if (typeFilter) f = f.filter(inv => inv.type === typeFilter)
+    setFiltered(f)
+  }, [invitations, search, typeFilter])
 
   const fetchInvitations = async () => {
-    try {
-      setLoading(true)
-      console.log('Fetching invitations from API...')
-      
-      const response = await fetch('/api/invitations', {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Content-Type': 'application/json'
-        }
-      })
-
-      console.log('API Response status:', response.status)
-
-      if (!response.ok) {
-        console.error('API request failed:', response.status, response.statusText)
-        setInvitations([]) // Fallback to empty array
-        return
-      }
-
-      const data = await response.json()
-      console.log('API Response data:', {
-        isArray: Array.isArray(data),
-        length: data?.length || 0,
-        type: typeof data
-      })
-
-      // Safety check - ensure data is array
-      if (Array.isArray(data)) {
-        setInvitations(data)
-      } else {
-        console.error('API returned non-array data:', data)
-        setInvitations([]) // Fallback to empty array
-      }
-
-    } catch (error) {
-      console.error('Error fetching invitations:', error)
-      setInvitations([]) // Fallback to empty array
-    } finally {
-      setLoading(false)
-    }
+    setLoading(true)
+    try { const r = await fetch('/api/invitations'); setInvitations(await r.json()) } catch {}
+    setLoading(false)
   }
 
-  const retryFailedMessages = async (invitationId: string) => {
-    setRetryingId(invitationId)
-    
+  const handleRetryFailed = async () => {
+    setRetrying(true)
     try {
-      // Simulate retry operation
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Refresh data after retry
-      await fetchInvitations()
-      
-      alert('Failed messages have been retried successfully!')
-    } catch (error) {
-      console.error('Error retrying messages:', error)
-      alert('Error retrying messages. Please try again.')
-    } finally {
-      setRetryingId(null)
-    }
+      const r = await fetch('/api/retry-failed', { method: 'POST' })
+      const result = await r.json()
+      alert(r.ok ? `✅ ${result.message}` : `❌ ${result.error}`)
+      if (r.ok) fetchInvitations()
+    } catch { alert('❌ Network error') }
+    setRetrying(false)
   }
 
-  if (loading) {
+  const totalEmails = invitations.reduce((acc, inv) => acc + (inv._count?.emailLogs || 0), 0)
+  const totalWA = invitations.reduce((acc, inv) => acc + (inv._count?.whatsappLogs || 0), 0)
+  const totalSMS = invitations.reduce((acc, inv) => acc + (inv._count?.smsLogs || 0), 0)
+
+  const getTypeChip = (type: string) => {
+    const t = chanMap[type]
+    if (!t) return null
     return (
-      <AdminProtection>
-        <Navigation />
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600 text-lg">Loading invitations...</p>
-          </div>
-        </div>
-      </AdminProtection>
+      <span style={{display:'inline-flex',alignItems:'center',gap:'0.25rem',padding:'0.2rem 0.55rem',borderRadius:'99px',fontSize:'0.7rem',fontWeight:600,background:`${t.color}18`,color:t.color}}>
+        {t.icon} {type}
+      </span>
     )
   }
 
   return (
     <AdminProtection>
-      <Navigation />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 text-gray-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          
+      <motion.div variants={pageVariants} initial="initial" animate="animate" style={{minHeight:'100vh',background:'var(--bg-primary)'}}>
+        <Navigation/>
+        <div style={{maxWidth:'80rem',margin:'0 auto',padding:'2rem 1.5rem'}}>
+
           {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl">
-                <AppIcons.Send size={24} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Invitations History</h1>
-                <p className="text-gray-600">Track all your sent invitations and their performance</p>
-              </div>
+          <div style={{display:'flex',flexWrap:'wrap',alignItems:'flex-start',justifyContent:'space-between',gap:'1rem',marginBottom:'2rem'}}>
+            <div>
+              <p style={{fontSize:'0.7rem',color:'var(--accent)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'0.35rem'}}>Admin Panel</p>
+              <h1 style={{fontSize:'clamp(1.4rem,3vw,2rem)',fontWeight:800,color:'var(--text-heading)'}}>Invitation Analytics</h1>
+              <p style={{color:'var(--text-muted)',fontSize:'0.85rem'}}>All sent invitations and their delivery status</p>
             </div>
-            
-            <Link
-              href="/compose"
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 shadow-lg transition-all font-medium flex items-center justify-center gap-2"
-            >
-              <AppIcons.Add size={20} />
-              <span>Compose New</span>
-            </Link>
+            <div style={{display:'flex',gap:'0.5rem'}}>
+              <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.97}} onClick={handleRetryFailed} disabled={retrying} className="btn-secondary">
+                <RefreshCw size={14} style={{animation:retrying?'spin 0.6s linear infinite':undefined}}/> Retry Failed
+              </motion.button>
+              <Link href="/compose">
+                <motion.div whileHover={{scale:1.03}} whileTap={{scale:0.97}} className="btn-primary" style={{display:'inline-flex'}}>
+                  <Send size={14}/> New Invitation
+                </motion.div>
+              </Link>
+            </div>
           </div>
 
-          {/* Stats Overview */}
-          {invitations.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 text-center">
-                <AppIcons.Send size={20} className="text-blue-600 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-blue-600 mb-1">
-                  {invitations.reduce((sum, inv) => sum + inv.analytics.totalSent, 0)}
+          {/* Stats overview */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:'1rem',marginBottom:'2rem'}}>
+            {[
+              {label:'Total Invitations',value:invitations.length,color:'var(--accent)',icon:<BarChart2 size={18}/>},
+              {label:'Emails Sent',value:totalEmails,color:'var(--accent)',icon:<Mail size={18}/>},
+              {label:'WhatsApp Sent',value:totalWA,color:'#22c55e',icon:<MessageSquare size={18}/>},
+              {label:'SMS Sent',value:totalSMS,color:'#f59e0b',icon:<Phone size={18}/>},
+            ].map((s,i) => (
+              <motion.div key={s.label} initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:i*0.08}} className="card" style={{padding:'1.25rem',position:'relative',overflow:'hidden'}}>
+                <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:s.color,opacity:0.7}}/>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.5rem'}}>
+                  <p style={{fontSize:'0.7rem',color:'var(--text-muted)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em'}}>{s.label}</p>
+                  <div style={{padding:'0.375rem',background:`${s.color}18`,borderRadius:'0.4rem',color:s.color}}>{s.icon}</div>
                 </div>
-                <div className="text-sm text-blue-700 font-medium">Total Sent</div>
-              </div>
-              
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 text-center">
-                <AppIcons.Check size={20} className="text-green-600 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-green-600 mb-1">
-                  {invitations.reduce((sum, inv) => sum + inv.analytics.delivered, 0)}
-                </div>
-                <div className="text-sm text-green-700 font-medium">Delivered</div>
-              </div>
-              
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 text-center">
-                <AppIcons.Preview size={20} className="text-purple-600 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-purple-600 mb-1">
-                  {invitations.reduce((sum, inv) => sum + inv.analytics.opened, 0)}
-                </div>
-                <div className="text-sm text-purple-700 font-medium">Opened</div>
-              </div>
-              
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 text-center">
-                <AppIcons.Close size={20} className="text-red-600 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-red-600 mb-1">
-                  {invitations.reduce((sum, inv) => sum + inv.analytics.failed, 0)}
-                </div>
-                <div className="text-sm text-red-700 font-medium">Failed</div>
-              </div>
+                <p style={{fontSize:'2rem',fontWeight:800,color:s.color,lineHeight:1}}>{s.value}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="card-plain" style={{padding:'1.25rem',marginBottom:'1.5rem',display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:'0.75rem'}}>
+            <div style={{position:'relative'}}>
+              <Search size={14} style={{position:'absolute',left:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
+              <input className="input-field" style={{paddingLeft:'2.25rem'}} type="text" placeholder="Search invitations..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            </div>
+            <select className="input-field" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}>
+              <option value="">All Channels</option>
+              <option value="email">Email</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="sms">SMS</option>
+            </select>
+            <button className="btn-ghost" onClick={()=>{setSearch('');setTypeFilter('')}}><X size={14}/> Clear</button>
+          </div>
+
+          {/* Table */}
+          {loading ? (
+            <div style={{textAlign:'center',padding:'4rem',color:'var(--text-muted)'}}>
+              <div className="spinner" style={{margin:'0 auto 1rem'}}/>
+              <p>Loading invitations...</p>
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Title</th><th>Channel</th><th>Messages</th><th>Status</th><th>Created</th><th>View</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length===0 ? (
+                    <tr><td colSpan={7} style={{textAlign:'center',padding:'3rem',color:'var(--text-muted)'}}>
+                      <BarChart2 size={40} style={{margin:'0 auto 0.75rem',opacity:0.3}}/>
+                      <p style={{fontWeight:600}}>{invitations.length===0?'No invitations sent yet':'No results found'}</p>
+                      {invitations.length===0&&(<Link href="/compose" style={{color:'var(--accent)',fontWeight:600,display:'inline-flex',alignItems:'center',gap:'0.25rem',marginTop:'0.5rem'}}>Create your first invitation <ChevronRight size={14}/></Link>)}
+                    </td></tr>
+                  ) : filtered.map((inv,i) => {
+                    const totalMsgs = (inv._count?.emailLogs||0)+(inv._count?.whatsappLogs||0)+(inv._count?.smsLogs||0)
+                    return (
+                      <motion.tr key={inv.id} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} transition={{delay:i*0.025}}>
+                        <td style={{fontWeight:700,color:'var(--text-muted)',fontSize:'0.8rem'}}>{i+1}</td>
+                        <td>
+                          <div style={{fontWeight:600,color:'var(--text-heading)'}}>{inv.title}</div>
+                          <div style={{fontSize:'0.72rem',color:'var(--text-muted)'}}>ID: {inv.id.slice(-8)}</div>
+                        </td>
+                        <td>{getTypeChip(inv.type)}</td>
+                        <td>
+                          <div style={{display:'flex',alignItems:'center',gap:'0.75rem',fontSize:'0.8rem'}}>
+                            {(inv._count?.emailLogs||0)>0&&<span style={{color:'var(--accent)'}}><Mail size={12} style={{display:'inline',marginRight:'0.2rem'}}/>{inv._count?.emailLogs}</span>}
+                            {(inv._count?.whatsappLogs||0)>0&&<span style={{color:'#22c55e'}}><MessageSquare size={12} style={{display:'inline',marginRight:'0.2rem'}}/>{inv._count?.whatsappLogs}</span>}
+                            {(inv._count?.smsLogs||0)>0&&<span style={{color:'#f59e0b'}}><Phone size={12} style={{display:'inline',marginRight:'0.2rem'}}/>{inv._count?.smsLogs}</span>}
+                            {totalMsgs===0&&<span style={{color:'var(--text-muted)'}}>—</span>}
+                          </div>
+                        </td>
+                        <td><StatusBadge status={inv.status}/></td>
+                        <td style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{new Date(inv.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          <Link href={`/invitations/${inv.id}`}>
+                            <motion.div whileHover={{scale:1.05}} whileTap={{scale:0.95}} className="btn-secondary" style={{padding:'0.3rem 0.6rem',fontSize:'0.75rem',display:'inline-flex',gap:'0.25rem',alignItems:'center'}}>
+                              <Eye size={12}/> View
+                            </motion.div>
+                          </Link>
+                        </td>
+                      </motion.tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
-
-          {/* Invitations List */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-6 border-b-2 border-blue-200">
-              <div className="flex items-center gap-3">
-                <AppIcons.List size={20} className="text-blue-600" />
-                <h2 className="text-xl font-bold text-gray-900">
-                  Invitation History ({invitations.length} records)
-                </h2>
-              </div>
-            </div>
-            
-            {invitations.length > 0 ? (
-              <div className="divide-y divide-gray-200">
-                {invitations.map((invitation) => (
-                  <div key={invitation.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                      
-                      {/* Invitation Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-4">
-                          <div className="p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg flex-shrink-0">
-                            <AppIcons.Email size={20} className="text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
-                              {invitation.subject}
-                            </h3>
-                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                              <AppIcons.Calendar size={14} />
-                              <span>
-                                {new Date(invitation.createdAt).toLocaleDateString()} at{' '}
-                                {new Date(invitation.createdAt).toLocaleTimeString()}
-                              </span>
-                            </div>
-                            
-                            {/* Stats */}
-                            <div className="flex flex-wrap items-center gap-4 text-sm">
-                              <div className="flex items-center gap-1">
-                                <AppIcons.Send size={14} className="text-blue-600" />
-                                <span className="text-blue-700 font-medium">
-                                  {invitation.analytics.totalSent} sent
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <AppIcons.Check size={14} className="text-green-600" />
-                                <span className="text-green-700 font-medium">
-                                  {invitation.analytics.delivered} delivered
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <AppIcons.Preview size={14} className="text-purple-600" />
-                                <span className="text-purple-700 font-medium">
-                                  {invitation.analytics.opened} opened
-                                </span>
-                              </div>
-                              {invitation.analytics.failed > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <AppIcons.Close size={14} className="text-red-600" />
-                                  <span className="text-red-700 font-medium">
-                                    {invitation.analytics.failed} failed
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {invitation.analytics.failed > 0 && (
-                          <button
-                            onClick={() => retryFailedMessages(invitation.id)}
-                            disabled={retryingId === invitation.id}
-                            className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 shadow-lg transition-all font-medium flex items-center gap-2 text-sm"
-                          >
-                            {retryingId === invitation.id ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                <span>Retrying...</span>
-                              </>
-                            ) : (
-                              <>
-                                <AppIcons.Refresh size={14} />
-                                <span>Retry {invitation.analytics.failed}</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                        
-                        <Link
-                          href={`/invitations/${invitation.id}`}
-                          className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg transition-all font-medium flex items-center gap-2 text-sm"
-                        >
-                          <AppIcons.Preview size={14} />
-                          <span>View Details</span>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <AppIcons.Warning size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Invitations Found</h3>
-                <p className="text-gray-600 mb-6">
-                  You haven't sent any invitations yet. Create your first invitation to get started.
-                </p>
-                <Link
-                  href="/compose"
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 shadow-lg transition-all font-medium inline-flex items-center gap-2"
-                >
-                  <AppIcons.Add size={16} />
-                  <span>Compose First Invitation</span>
-                </Link>
-              </div>
-            )}
-          </div>
         </div>
-      </div>
+      </motion.div>
     </AdminProtection>
   )
 }

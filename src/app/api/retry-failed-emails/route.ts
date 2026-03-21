@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import sgMail from '@sendgrid/mail'
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+import { createTransporter } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +10,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invitation ID is required' },
         { status: 400 }
+      )
+    }
+
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      return NextResponse.json(
+        { error: 'Gmail credentials not configured' },
+        { status: 500 }
       )
     }
 
@@ -44,25 +49,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare retry emails
-    const retryEmails = failedLogs.map(log => {
-      if (!log.student) {
-        throw new Error(`Student not found for email log ${log.id}`);
-      }
-      const personalizedContent = invitation.content.replace(/\{\{name\}\}/g, log.student.name)
-      const personalizedSubject = invitation.subject.replace(/\{\{name\}\}/g, log.student.name)
+    const transporter = createTransporter()
 
-      return {
-        to: log.student.email,
-        from: process.env.SENDGRID_FROM_EMAIL!,
-        subject: `[RETRY] ${personalizedSubject}`,
-        html: personalizedContent
-      }
-    })
-
-    // Send retry emails
+    // Send retry emails individually
     try {
-      await sgMail.send(retryEmails)
+      for (const log of failedLogs) {
+        if (!log.student) continue;
+
+        const personalizedContent = invitation.content.replace(/\{\{name\}\}/g, log.student.name)
+        const personalizedSubject = invitation.subject.replace(/\{\{name\}\}/g, log.student.name)
+
+        await transporter.sendMail({
+          to: log.student.email,
+          from: `"College Invitation System" <${process.env.GMAIL_USER}>`,
+          subject: `[RETRY] ${personalizedSubject}`,
+          html: personalizedContent
+        })
+      }
 
       // Update email logs status
       const updatePromises = failedLogs.map(log =>

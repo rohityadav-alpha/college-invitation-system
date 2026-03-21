@@ -1,650 +1,412 @@
 'use client'
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { AppIcons } from '@/components/icons/AppIcons'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  GraduationCap, Users, BookOpen, Rocket, Lock, LogOut,
+  LayoutDashboard, Check, X, Shield, ChevronRight
+} from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
+
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+}
+
+const tabs = [
+  { id: 'student',   label: 'Student',   icon: GraduationCap, color: 'var(--accent)' },
+  { id: 'guest',     label: 'Guest',     icon: Users,         color: '#22c55e' },
+  { id: 'professor', label: 'Professor', icon: BookOpen,      color: '#a855f7' },
+] as const
+
+type Tab = typeof tabs[number]['id']
+
+const courses = [
+  'Computer Science','Information Technology','Electronics & Communication',
+  'Mechanical Engineering','Civil Engineering','Electrical Engineering',
+  'Business Administration','Commerce','Arts','Science',
+]
+const years = ['1st Year','2nd Year','3rd Year','4th Year','Final Year']
+const categories = ['guest','vip','alumni','industry','media','sponsor','speaker']
+const departments = [
+  'Computer Science','Information Technology','Electronics & Communication',
+  'Mechanical Engineering','Civil Engineering','Electrical Engineering',
+  'Mathematics','Physics','Chemistry','English','Business Administration',
+]
+const designations = [
+  'Professor','Associate Professor','Assistant Professor','Dr.','Dean',
+  'Head of Department','Principal','Director','Lecturer','Senior Lecturer',
+]
 
 export default function HomePage() {
   const { isAdmin, login, logout } = useAuth()
-  const [activeTab, setActiveTab] = useState<'student' | 'guest' | 'professor'>('student')
+  const [activeTab, setActiveTab] = useState<Tab>('student')
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Form states
-  const [studentForm, setStudentForm] = useState({
-    name: '',
-    email: '',
-    course: '',
-    year: '',
-    phone: ''
-  })
+  const [studentForm, setStudentForm] = useState({ name:'',email:'',course:'',year:'',phone:'' })
+  const [guestForm, setGuestForm] = useState({ name:'',email:'',organization:'',designation:'',phone:'',category:'guest' })
+  const [professorForm, setProfessorForm] = useState({ name:'',email:'',college:'',department:'',designation:'Professor',phone:'',expertise:'' })
 
-  const [guestForm, setGuestForm] = useState({
-    name: '',
-    email: '',
-    organization: '',
-    designation: '',
-    phone: '',
-    category: 'guest'
-  })
-
-  const [professorForm, setProfessorForm] = useState({
-    name: '',
-    email: '',
-    college: '',
-    department: '',
-    designation: 'Professor',
-    phone: '',
-    expertise: ''
-  })
-
-  // Admin login
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     const result = await login(adminPassword)
-    
     if (result.success) {
-      alert('✅ Admin login successful!')
       setShowAdminLogin(false)
       setAdminPassword('')
-      // Redirect to dashboard
       window.location.href = '/dashboard'
     } else {
       alert(`❌ ${result.error}`)
     }
-    
     setLoading(false)
   }
 
-  // Student registration
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
-      const response = await fetch('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(studentForm)
-      })
-
-      if (response.ok) {
-        alert('✅ Student registration successful! You will receive invitations on your email.')
-        setStudentForm({ name: '', email: '', course: '', year: '', phone: '' })
-      } else {
-        const result = await response.json()
-        alert(`❌ ${result.error}`)
-      }
-    } catch (error) {
-      alert('❌ Registration failed. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+      const r = await fetch('/api/students', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(studentForm) })
+      if (r.ok) { alert('✅ Student registration successful!'); setStudentForm({name:'',email:'',course:'',year:'',phone:''}) }
+      else { const d = await r.json(); alert(`❌ ${d.error}`) }
+    } catch { alert('❌ Registration failed. Please try again.') }
+    setLoading(false)
   }
 
-  // Guest registration
   const handleGuestSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
-      const response = await fetch('/api/guests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(guestForm)
-      })
-
-      if (response.ok) {
-        alert('✅ Guest registration successful! You will receive invitations on your email.')
-        setGuestForm({ name: '', email: '', organization: '', designation: '', phone: '', category: 'guest' })
-      } else {
-        const result = await response.json()
-        alert(`❌ ${result.error}`)
-      }
-    } catch (error) {
-      alert('❌ Registration failed. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+      const r = await fetch('/api/guests', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(guestForm) })
+      if (r.ok) { alert('✅ Guest registration successful!'); setGuestForm({name:'',email:'',organization:'',designation:'',phone:'',category:'guest'}) }
+      else { const d = await r.json(); alert(`❌ ${d.error}`) }
+    } catch { alert('❌ Registration failed. Please try again.') }
+    setLoading(false)
   }
 
-  // Professor registration
-  const handleProfessorSubmit = async (e: React.FormEvent) => {
+  const handleProfSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
-      const response = await fetch('/api/professors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(professorForm)
-      })
-
-      if (response.ok) {
-        alert('✅ Professor registration successful! You will receive invitations on your email.')
-        setProfessorForm({ 
-          name: '', 
-          email: '', 
-          college: '', 
-          department: '', 
-          designation: 'Professor', 
-          phone: '', 
-          expertise: '' 
-        })
-      } else {
-        const result = await response.json()
-        alert(`❌ ${result.error}`)
-      }
-    } catch (error) {
-      alert('❌ Registration failed. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+      const r = await fetch('/api/professors', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(professorForm) })
+      if (r.ok) { alert('✅ Professor registration successful!'); setProfessorForm({name:'',email:'',college:'',department:'',designation:'Professor',phone:'',expertise:''}) }
+      else { const d = await r.json(); alert(`❌ ${d.error}`) }
+    } catch { alert('❌ Registration failed. Please try again.') }
+    setLoading(false)
   }
 
-  const courses = [
-    'Computer Science', 'Information Technology', 'Electronics & Communication',
-    'Mechanical Engineering', 'Civil Engineering', 'Electrical Engineering',
-    'Business Administration', 'Commerce', 'Arts', 'Science'
-  ]
-
-  const years = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Final Year']
-
-  const categories = ['guest', 'vip', 'alumni', 'industry', 'media', 'sponsor', 'speaker']
-
-  const departments = [
-    'Computer Science', 'Information Technology', 'Electronics & Communication',
-    'Mechanical Engineering', 'Civil Engineering', 'Electrical Engineering',
-    'Mathematics', 'Physics', 'Chemistry', 'English', 'Business Administration'
-  ]
-
-  const designations = [
-    'Professor', 'Associate Professor', 'Assistant Professor', 'Dr.', 'Dean', 
-    'Head of Department', 'Principal', 'Director', 'Lecturer', 'Senior Lecturer'
-  ]
+  const formInputStyle: React.CSSProperties = {
+    width: '100%',
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border-input)',
+    borderRadius: '0.625rem',
+    padding: '0.75rem 1rem',
+    color: 'var(--text-primary)',
+    fontSize: '0.9rem',
+    outline: 'none',
+  }
 
   return (
- <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 text-gray-600">
-      {/* Enhanced Header */}
-      <header className="bg-white shadow-xl border-b-2 border-blue-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg">
-                <AppIcons.Rocket size={32} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
-                  Invitation System
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">Streamlined event management platform</p>
-              </div>
+    <motion.div variants={pageVariants} initial="initial" animate="animate" style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+
+      {/* Header */}
+      <header style={{
+        background: 'var(--bg-nav)',
+        borderBottom: '1px solid var(--border-card)',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+      }}>
+        <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ padding: '0.5rem', background: 'var(--accent)', borderRadius: '0.5rem' }}>
+              <Rocket size={22} style={{ color: '#0a1628' }} />
             </div>
-            
-            <div className="flex gap-2 sm:gap-3">
-              {!isAdmin ? (
-                <button
-                  onClick={() => setShowAdminLogin(true)}
-                  className="bg-gradient-to-r from-gray-800 to-gray-900 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-gray-900 hover:to-black flex items-center gap-2 shadow-lg transition-all font-medium"
-                >
-                  <AppIcons.Lock size={16} />
-                  <span className="text-sm sm:text-base">Admin Login</span>
-                </button>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <a
-                    href="/dashboard"
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center gap-2 shadow-lg transition-all font-medium"
-                  >
-                    <AppIcons.Dashboard size={16} />
-                    <span className="text-sm sm:text-base">Dashboard</span>
-                  </a>
-                  <button
-                    onClick={logout}
-                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-red-700 hover:to-red-800 flex items-center justify-center gap-2 shadow-lg transition-all font-medium"
-                  >
-                    <AppIcons.Logout size={16} />
-                    <span className="text-sm sm:text-base">Logout</span>
-                  </button>
-                </div>
-              )}
+            <div>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-heading)', lineHeight: 1 }}>Invitation System</h1>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>Streamlined event management platform</p>
             </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+            <ThemeToggle />
+            {!isAdmin ? (
+              <motion.button
+                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={() => setShowAdminLogin(true)}
+                className="btn-secondary"
+              >
+                <Lock size={14} /> Admin Login
+              </motion.button>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <motion.a whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} href="/dashboard" className="btn-primary">
+                  <LayoutDashboard size={14} /> Dashboard
+                </motion.a>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={logout} className="btn-danger">
+                  <LogOut size={14} /> Logout
+                </motion.button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-        {/* Enhanced Registration Tabs */}
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200 border-hidden">
-          {/* Enhanced Tab Navigation */}
-          <div className="flex bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-            <button
-              onClick={() => setActiveTab('student')}
-              className={`flex-1 py-4 sm:py-6 px-4 sm:px-6 text-center font-semibold transition-all duration-300 relative ${
-                activeTab === 'student' 
-                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transform scale-105' 
-                  : 'text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                <AppIcons.Students size={24} />
-                <span className="text-sm sm:text-base">Student Registration</span>
-              </div>
-              {activeTab === 'student' && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-800"></div>
-              )}
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('guest')}
-              className={`flex-1 py-4 sm:py-6 px-4 sm:px-6 text-center font-semibold transition-all duration-300 relative ${
-                activeTab === 'guest' 
-                  ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg transform scale-105' 
-                  : 'text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                <AppIcons.Guests size={24} />
-                <span className="text-sm sm:text-base">Guest Registration</span>
-              </div>
-              {activeTab === 'guest' && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-green-800"></div>
-              )}
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('professor')}
-              className={`flex-1 py-4 sm:py-6 px-4 sm:px-6 text-center font-semibold transition-all duration-300 relative ${
-                activeTab === 'professor' 
-                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg transform scale-105' 
-                  : 'text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                <AppIcons.Professors size={24} />
-                <span className="text-sm sm:text-base">Professor Registration</span>
-              </div>
-              {activeTab === 'professor' && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-800"></div>
-              )}
-            </button>
-          </div>
-
-          {/* Enhanced Registration Forms */}
-          <div className="p-6 sm:p-8 lg:p-12">
-            {/* Enhanced Student Form */}
-            {activeTab === 'student' && (
-              <form onSubmit={handleStudentSubmit} className="space-y-6 sm:space-y-8">
-                <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-                  <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-100 to-blue-200 rounded-xl">
-                    <AppIcons.Students size={28} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Student Registration</h2>
-                    <p className="text-sm sm:text-base text-gray-600 mt-1">Register to receive event invitations</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={studentForm.name}
-                      onChange={(e) => setStudentForm({...studentForm, name: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                    <input
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={studentForm.email}
-                      onChange={(e) => setStudentForm({...studentForm, email: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Course *</label>
-                    <select
-                      value={studentForm.course}
-                      onChange={(e) => setStudentForm({...studentForm, course: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    >
-                      <option value="">Select Course *</option>
-                      {courses.map(course => (
-                        <option key={course} value={course}>{course}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Year *</label>
-                    <select
-                      value={studentForm.year}
-                      onChange={(e) => setStudentForm({...studentForm, year: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    >
-                      <option value="">Select Year *</option>
-                      {years.map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input
-                      type="tel"
-                      placeholder="Enter your phone number"
-                      value={studentForm.phone}
-                      onChange={(e) => setStudentForm({...studentForm, phone: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-                </div>
-                
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 shadow-lg transition-all"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <AppIcons.Check size={18} />
-                  )}
-                  <span>{loading ? 'Registering...' : 'Register as Student'}</span>
-                </button>
-              </form>
-            )}
-
-            {/* Enhanced Guest Form */}
-            {activeTab === 'guest' && (
-              <form onSubmit={handleGuestSubmit} className="space-y-6 sm:space-y-8">
-                <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-                  <div className="p-2 sm:p-3 bg-gradient-to-r from-green-100 to-green-200 rounded-xl">
-                    <AppIcons.Guests size={28} className="text-green-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Guest Registration</h2>
-                    <p className="text-sm sm:text-base text-gray-600 mt-1">Register to receive event invitations</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={guestForm.name}
-                      onChange={(e) => setGuestForm({...guestForm, name: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                    <input
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={guestForm.email}
-                      onChange={(e) => setGuestForm({...guestForm, email: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Organization/Company *</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your organization name"
-                      value={guestForm.organization}
-                      onChange={(e) => setGuestForm({...guestForm, organization: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Your Designation *</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your designation"
-                      value={guestForm.designation}
-                      onChange={(e) => setGuestForm({...guestForm, designation: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input
-                      type="tel"
-                      placeholder="Enter your phone number"
-                      value={guestForm.phone}
-                      onChange={(e) => setGuestForm({...guestForm, phone: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                    <select
-                      value={guestForm.category}
-                      onChange={(e) => setGuestForm({...guestForm, category: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                    >
-                      {categories.map(category => (
-                        <option key={category} value={category}>
-                          {category.charAt(0).toUpperCase() + category.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 shadow-lg transition-all"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <AppIcons.Check size={18} />
-                  )}
-                  <span>{loading ? 'Registering...' : 'Register as Guest'}</span>
-                </button>
-              </form>
-            )}
-
-            {/* Enhanced Professor Form */}
-            {activeTab === 'professor' && (
-              <form onSubmit={handleProfessorSubmit} className="space-y-6 sm:space-y-8">
-                <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-                  <div className="p-2 sm:p-3 bg-gradient-to-r from-purple-100 to-purple-200 rounded-xl">
-                    <AppIcons.Professors size={28} className="text-purple-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Professor Registration</h2>
-                    <p className="text-sm sm:text-base text-gray-600 mt-1">Register to receive event invitations</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={professorForm.name}
-                      onChange={(e) => setProfessorForm({...professorForm, name: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                    <input
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={professorForm.email}
-                      onChange={(e) => setProfessorForm({...professorForm, email: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">College/University Name *</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your institution name"
-                      value={professorForm.college}
-                      onChange={(e) => setProfessorForm({...professorForm, college: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
-                    <select
-                      value={professorForm.department}
-                      onChange={(e) => setProfessorForm({...professorForm, department: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      required
-                    >
-                      <option value="">Select Department *</option>
-                      {departments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Designation</label>
-                    <select
-                      value={professorForm.designation}
-                      onChange={(e) => setProfessorForm({...professorForm, designation: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    >
-                      {designations.map(designation => (
-                        <option key={designation} value={designation}>{designation}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input
-                      type="tel"
-                      placeholder="Enter your phone number"
-                      value={professorForm.phone}
-                      onChange={(e) => setProfessorForm({...professorForm, phone: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Expertise/Subject Area</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your area of expertise"
-                      value={professorForm.expertise}
-                      onChange={(e) => setProfessorForm({...professorForm, expertise: e.target.value})}
-                      className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-                </div>
-                
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 sm:py-4 px-6 rounded-xl hover:from-purple-700 hover:to-purple-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 shadow-lg transition-all"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <AppIcons.Check size={18} />
-                  )}
-                  <span>{loading ? 'Registering...' : 'Register as Professor'}</span>
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
+      {/* Hero */}
+      <div style={{ maxWidth: '48rem', margin: '3rem auto 0', padding: '0 1.5rem', textAlign: 'center' }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.75rem' }}>
+            🎓 College Event Management
+          </p>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 800, color: 'var(--text-heading)', lineHeight: 1.15, marginBottom: '1rem' }}>
+            Register to receive <span style={{ color: 'var(--accent)' }}>event invitations</span>
+          </h2>
+          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2.5rem' }}>
+            Join our invitation list and stay updated with all college events — seminars, workshops, cultural programs & more.
+          </p>
+        </motion.div>
       </div>
 
-      {/* Enhanced Admin Login Modal */}
-      {showAdminLogin && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 shadow-2xl border-2 border-gray-200">
-            <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-              <div className="p-2 sm:p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl">
-                <AppIcons.Shield size={28} className="text-white" />
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Login</h2>
+      {/* Registration Card */}
+      <div style={{ maxWidth: '44rem', margin: '0 auto 4rem', padding: '0 1.5rem' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="card-plain"
+          style={{ overflow: 'hidden' }}
+        >
+          {/* Tab bar */}
+          <div style={{ display: 'flex', background: 'var(--bg-table-hd)', borderBottom: '1px solid var(--border-card)' }}>
+            {tabs.map(tab => {
+              const Icon = tab.icon
+              const active = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    flex: 1,
+                    padding: '1rem 0.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    background: active ? 'var(--bg-card)' : 'transparent',
+                    border: 'none',
+                    borderBottom: active ? `2px solid ${tab.color}` : '2px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    color: active ? tab.color : 'var(--text-muted)',
+                  }}
+                >
+                  <Icon size={18} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{tab.label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Forms */}
+          <div style={{ padding: '2rem' }}>
+            <AnimatePresence mode="wait">
+
+              {/* Student Form */}
+              {activeTab === 'student' && (
+                <motion.form
+                  key="student"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  onSubmit={handleStudentSubmit}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '0.625rem', background: 'rgba(0,212,255,0.12)', borderRadius: '0.5rem' }}>
+                      <GraduationCap size={20} style={{ color: 'var(--accent)' }} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-heading)' }}>Student Registration</h2>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Register to receive event invitations</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                    <input className="input-field" type="text" placeholder="Full Name *" value={studentForm.name} onChange={e => setStudentForm({...studentForm, name: e.target.value})} required />
+                    <input className="input-field" type="email" placeholder="Email Address *" value={studentForm.email} onChange={e => setStudentForm({...studentForm, email: e.target.value})} required />
+                    <select className="input-field" value={studentForm.course} onChange={e => setStudentForm({...studentForm, course: e.target.value})} required>
+                      <option value="">Select Course *</option>
+                      {courses.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <select className="input-field" value={studentForm.year} onChange={e => setStudentForm({...studentForm, year: e.target.value})} required>
+                      <option value="">Select Year *</option>
+                      {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <input className="input-field" type="tel" placeholder="Phone Number" value={studentForm.phone} onChange={e => setStudentForm({...studentForm, phone: e.target.value})} style={{ gridColumn: '1 / -1' }} />
+                  </div>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '0.875rem' }}>
+                    {loading ? <div className="spinner" /> : <Check size={16} />}
+                    {loading ? 'Registering...' : 'Register as Student'}
+                  </motion.button>
+                </motion.form>
+              )}
+
+              {/* Guest Form */}
+              {activeTab === 'guest' && (
+                <motion.form
+                  key="guest"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  onSubmit={handleGuestSubmit}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '0.625rem', background: 'rgba(34,197,94,0.12)', borderRadius: '0.5rem' }}>
+                      <Users size={20} style={{ color: '#22c55e' }} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-heading)' }}>Guest Registration</h2>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Register to receive event invitations</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                    <input className="input-field" type="text" placeholder="Full Name *" value={guestForm.name} onChange={e => setGuestForm({...guestForm, name: e.target.value})} required />
+                    <input className="input-field" type="email" placeholder="Email Address *" value={guestForm.email} onChange={e => setGuestForm({...guestForm, email: e.target.value})} required />
+                    <input className="input-field" type="text" placeholder="Organization/Company *" value={guestForm.organization} onChange={e => setGuestForm({...guestForm, organization: e.target.value})} required />
+                    <input className="input-field" type="text" placeholder="Designation *" value={guestForm.designation} onChange={e => setGuestForm({...guestForm, designation: e.target.value})} required />
+                    <input className="input-field" type="tel" placeholder="Phone Number" value={guestForm.phone} onChange={e => setGuestForm({...guestForm, phone: e.target.value})} />
+                    <select className="input-field" value={guestForm.category} onChange={e => setGuestForm({...guestForm, category: e.target.value})}>
+                      {categories.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                    </select>
+                  </div>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} style={{ ...formInputStyle, background: '#22c55e', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem' }}>
+                    {loading ? <div className="spinner" /> : <Check size={16} />}
+                    {loading ? 'Registering...' : 'Register as Guest'}
+                  </motion.button>
+                </motion.form>
+              )}
+
+              {/* Professor Form */}
+              {activeTab === 'professor' && (
+                <motion.form
+                  key="professor"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  onSubmit={handleProfSubmit}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '0.625rem', background: 'rgba(168,85,247,0.12)', borderRadius: '0.5rem' }}>
+                      <BookOpen size={20} style={{ color: '#a855f7' }} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-heading)' }}>Professor Registration</h2>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Register to receive event invitations</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                    <input className="input-field" type="text" placeholder="Full Name *" value={professorForm.name} onChange={e => setProfessorForm({...professorForm, name: e.target.value})} required />
+                    <input className="input-field" type="email" placeholder="Email Address *" value={professorForm.email} onChange={e => setProfessorForm({...professorForm, email: e.target.value})} required />
+                    <input className="input-field" type="text" placeholder="College/University *" value={professorForm.college} onChange={e => setProfessorForm({...professorForm, college: e.target.value})} required />
+                    <select className="input-field" value={professorForm.department} onChange={e => setProfessorForm({...professorForm, department: e.target.value})} required>
+                      <option value="">Select Department *</option>
+                      {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select className="input-field" value={professorForm.designation} onChange={e => setProfessorForm({...professorForm, designation: e.target.value})}>
+                      {designations.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <input className="input-field" type="tel" placeholder="Phone Number" value={professorForm.phone} onChange={e => setProfessorForm({...professorForm, phone: e.target.value})} />
+                    <input className="input-field" type="text" placeholder="Expertise/Subject Area" value={professorForm.expertise} onChange={e => setProfessorForm({...professorForm, expertise: e.target.value})} style={{ gridColumn: '1 / -1' }} />
+                  </div>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} style={{ ...formInputStyle, background: '#a855f7', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem' }}>
+                    {loading ? <div className="spinner" /> : <Check size={16} />}
+                    {loading ? 'Registering...' : 'Register as Professor'}
+                  </motion.button>
+                </motion.form>
+              )}
+
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* Features */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1.5rem' }}
+        >
+          {[
+            { icon: '📧', label: 'Email Invites' },
+            { icon: '💬', label: 'WhatsApp Alerts' },
+            { icon: '📱', label: 'SMS Notifications' },
+          ].map(f => (
+            <div key={f.label} style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-card)', borderRadius: '0.75rem', border: '1px solid var(--border-card)' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{f.icon}</div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>{f.label}</p>
             </div>
-            
-            <form onSubmit={handleAdminLogin} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Admin Password</label>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Admin Login Modal */}
+      <AnimatePresence>
+        {showAdminLogin && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal-overlay"
+            onClick={e => { if (e.target === e.currentTarget) { setShowAdminLogin(false); setAdminPassword('') } }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="card-plain"
+              style={{ width: '100%', maxWidth: '22rem', padding: '2rem', border: '1px solid var(--border)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                  <div style={{ padding: '0.5rem', background: 'var(--accent-glow)', borderRadius: '0.5rem' }}>
+                    <Shield size={18} style={{ color: 'var(--accent)' }} />
+                  </div>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-heading)' }}>Admin Login</h2>
+                </div>
+                <button onClick={() => { setShowAdminLogin(false); setAdminPassword('') }} className="btn-ghost" style={{ padding: '0.25rem' }}>
+                  <X size={16} />
+                </button>
+              </div>
+              <form onSubmit={handleAdminLogin}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>
+                  Admin Password
+                </label>
                 <input
                   type="password"
                   placeholder="Enter admin password"
                   value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full p-3 sm:p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
+                  onChange={e => setAdminPassword(e.target.value)}
+                  className="input-field"
+                  style={{ marginBottom: '1.25rem' }}
                   required
+                  autoFocus
                 />
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-gray-800 to-gray-900 text-white py-3 px-4 rounded-xl hover:from-gray-900 hover:to-black disabled:from-gray-400 disabled:to-gray-400 font-medium shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <AppIcons.Lock size={16} />
-                  )}
-                  <span>{loading ? 'Logging in...' : 'Login'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAdminLogin(false)
-                    setAdminPassword('')
-                  }}
-                  className="flex-1 bg-gradient-to-r from-gray-300 to-gray-400 text-gray-700 py-3 px-4 rounded-xl hover:from-gray-400 hover:to-gray-500 font-medium transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+                    {loading ? <div className="spinner" /> : <Lock size={14} />}
+                    {loading ? 'Logging in...' : 'Login'}
+                  </motion.button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="button" onClick={() => { setShowAdminLogin(false); setAdminPassword('') }} className="btn-ghost">
+                    Cancel
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }

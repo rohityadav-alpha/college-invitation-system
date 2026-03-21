@@ -1,168 +1,99 @@
-import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import Link from 'next/link'
+import { prisma } from '@/lib/prisma'
 import AdminProtection from '@/components/AdminProtection'
 import Navigation from '@/components/Navigation'
-import { AppIcons } from '@/components/icons/AppIcons'
+import StatCard from '@/components/StatCard'
+import { GraduationCap, Send, Mail, Users, BookOpen, BarChart2, Plus, ArrowRight } from 'lucide-react'
 
 export default async function Dashboard() {
-  const stats = {
-    totalStudents: await prisma.student.count(),
-    totalInvitations: await prisma.invitation.count(),
-    totalEmailsSent: await prisma.emailLog.count(),
-  };
+  const [totalStudents, totalInvitations, totalEmailsSent, totalGuests, totalProfessors] = await Promise.all([
+    prisma.student.count(),
+    prisma.invitation.count(),
+    prisma.emailLog.count(),
+    prisma.guest.count(),
+    prisma.professor.count(),
+  ])
+
+  const quickActions = [
+    { href: '/students',    icon: GraduationCap, label: 'Manage Students',   desc: 'Add, edit, or import student email lists',    color: 'var(--accent)' },
+    { href: '/guests',      icon: Users,         label: 'Manage Guests',     desc: 'Handle VIPs, alumni & industry contacts',     color: '#22c55e' },
+    { href: '/professors',  icon: BookOpen,      label: 'Manage Professors', desc: 'Academic faculty from institutions',           color: '#a855f7' },
+    { href: '/compose',     icon: Send,          label: 'Create Invitation', desc: 'Compose and send event invitations',          color: '#f59e0b' },
+    { href: '/invitations', icon: BarChart2,     label: 'View Analytics',   desc: 'Track delivery rates and open rates',         color: '#6366f1' },
+    { href: '/email-test',  icon: Mail,          label: 'Email Test',        desc: 'Test your email service connectivity',        color: '#ef4444' },
+  ]
 
   return (
-     <AdminProtection>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-          <Navigation />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-              <div className="p-2 sm:p-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg">
-                <AppIcons.Dashboard size={24} className="text-white" />
-              </div>
-            <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Manage your invitation system</p>
-          </div>
-        </div>
-      </div>
+    <AdminProtection>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+        <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        
-      </div>
+        <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1.5rem' }}>
 
-      {/* Enhanced Stats Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8 lg:mb-12">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 justify-center items-center flex flex-col gap-3 sm:gap-4 lg:gap-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-            <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full group-hover:from-blue-200 group-hover:to-blue-300 transition-all">
-              <AppIcons.Students size={38} className="text-blue-600 group-hover:text-blue-700 transition-colors" />
-            </div>
-            <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 text-center">
-              Total Students
-            </h3>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
-              {stats.totalStudents}
+          {/* Page Header */}
+          <div style={{ marginBottom: '2.5rem' }}>
+            <p style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.5rem' }}>
+              Admin Panel
+            </p>
+            <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 800, color: 'var(--text-heading)', marginBottom: '0.375rem' }}>
+              Dashboard
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Welcome back! Here&apos;s an overview of your invitation system.
             </p>
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 justify-center items-center flex flex-col gap-3 sm:gap-4 lg:gap-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-            <div className="p-3 sm:p-4 bg-gradient-to-r from-green-100 to-green-200 rounded-full group-hover:from-green-200 group-hover:to-green-300 transition-all">
-              <AppIcons.List size={38} className="text-green-600 group-hover:text-green-700 transition-colors" />
-            </div>
-            <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 text-center">
-              Invitations Created
-            </h3>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 group-hover:text-green-700 transition-colors">
-              {stats.totalInvitations}
-            </p>
+          {/* Stat Cards Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.25rem', marginBottom: '3rem' }}>
+            <StatCard title="Total Students"   value={totalStudents}    icon={<GraduationCap size={18}/>} accentColor="var(--accent)"   delay={0}    />
+            <StatCard title="Total Guests"     value={totalGuests}      icon={<Users size={18}/>}         accentColor="#22c55e"          delay={0.08} />
+            <StatCard title="Total Professors" value={totalProfessors}  icon={<BookOpen size={18}/>}      accentColor="#a855f7"          delay={0.16} />
+            <StatCard title="Invitations Sent" value={totalInvitations} icon={<Send size={18}/>}          accentColor="#f59e0b"          delay={0.24} />
+            <StatCard title="Emails Sent"      value={totalEmailsSent}  icon={<Mail size={18}/>}          accentColor="#6366f1"          delay={0.32} />
           </div>
 
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 justify-center items-center flex flex-col gap-3 sm:gap-4 lg:gap-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group">
-            <div className="p-3 sm:p-4 bg-gradient-to-r from-purple-100 to-purple-200 rounded-full group-hover:from-purple-200 group-hover:to-purple-300 transition-all">
-              <AppIcons.Email size={38} className="text-purple-600 group-hover:text-purple-700 transition-colors" />
-            </div>
-            <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 text-center">
-              Emails Sent
-            </h3>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-600 group-hover:text-purple-700 transition-colors">
-              {stats.totalEmailsSent}
-            </p>
+          {/* Quick Actions */}
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-heading)' }}>Quick Actions</h2>
+            <Link href="/compose" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}>
+              <Plus size={14} /> New Invitation
+            </Link>
           </div>
-        </div>
 
-        {/* Enhanced Quick Actions */}
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-            <AppIcons.Rocket size={24} className="text-indigo-600" />
-            Quick Actions
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-          <Link
-            href="/students"
-            className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 hover:shadow-xl transition-all duration-300 hover:scale-105 group"
-          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl group-hover:from-blue-200 group-hover:to-indigo-200 transition-all">
-                <AppIcons.Students size={28} className="text-blue-600 group-hover:text-blue-700 transition-colors" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                  Manage Students
-                </h3>
-                <p className="text-sm sm:text-base text-gray-600 group-hover:text-gray-700 transition-colors">
-                  Add, edit, or import student email lists
-                </p>
-              </div>
-              <AppIcons.ArrowRight size={20} className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-            </div>
-          </Link>
-
-          <Link
-            href="/compose"
-            className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 hover:shadow-xl transition-all duration-300 hover:scale-105 group"
-          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="p-3 sm:p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl group-hover:from-green-200 group-hover:to-emerald-200 transition-all">
-                <AppIcons.Send size={24} className="text-green-600 group-hover:text-green-700 transition-colors" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">
-                  Create Invitation
-                </h3>
-                <p className="text-sm sm:text-base text-gray-600 group-hover:text-gray-700 transition-colors">
-                  Compose and send event invitations
-                </p>
-              </div>
-              <AppIcons.ArrowRight size={20} className="text-gray-400 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
-            </div>
-          </Link>
-
-          <Link
-            href="/invitations"
-            className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 hover:shadow-xl transition-all duration-300 hover:scale-105 group"
-          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="p-3 sm:p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl group-hover:from-purple-200 group-hover:to-pink-200 transition-all">
-                <AppIcons.List size={24} className="text-purple-600 group-hover:text-purple-700 transition-colors" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">
-                  Invitation History
-                </h3>
-                <p className="text-sm sm:text-base text-gray-600 group-hover:text-gray-700 transition-colors">
-                  View sent invitations and delivery status
-                </p>
-              </div>
-              <AppIcons.ArrowRight size={20} className="text-gray-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
-            </div>
-          </Link>
-
-          <Link
-            href="/email-test"
-            className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 hover:shadow-xl transition-all duration-300 hover:scale-105 group"
-          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="p-3 sm:p-4 bg-gradient-to-r from-orange-100 to-yellow-100 rounded-xl group-hover:from-orange-200 group-hover:to-yellow-200 transition-all">
-                <AppIcons.Email size={24} className="text-orange-600 group-hover:text-orange-700 transition-colors" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
-                  Email Test
-                </h3>
-                <p className="text-sm sm:text-base text-gray-600 group-hover:text-gray-700 transition-colors">
-                  Test email service functionality
-                </p>
-              </div>
-              <AppIcons.ArrowRight size={20} className="text-gray-400 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
-            </div>
-          </Link>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+            {quickActions.map((action) => {
+              const Icon = action.icon
+              return (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div
+                    className="card"
+                    style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
+                  >
+                    <div style={{
+                      padding: '0.75rem',
+                      borderRadius: '0.625rem',
+                      background: `${action.color}18`,
+                      color: action.color,
+                      flexShrink: 0,
+                    }}>
+                      <Icon size={20} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-heading)', marginBottom: '0.15rem' }}>{action.label}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{action.desc}</p>
+                    </div>
+                    <ArrowRight size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
         </div>
       </div>
-    </div>
-
     </AdminProtection>
-  );
+  )
 }

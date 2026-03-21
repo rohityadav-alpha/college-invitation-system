@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createTransporter } from '@/lib/email'
 
 // Build-safe configuration
 export const runtime = 'nodejs'
@@ -7,7 +8,6 @@ export const dynamic = 'force-dynamic'
 // Dynamic service initialization
 let servicesInitialized = false
 let prisma: any = null
-let sgMail: any = null
 
 const initializeServices = async () => {
   if (servicesInitialized) return
@@ -17,17 +17,6 @@ const initializeServices = async () => {
     if (!prisma) {
       const { prisma: p } = await import('@/lib/prisma')
       prisma = p
-    }
-
-    // Initialize SendGrid if available
-    if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.')) {
-      try {
-        const sg = await import('@sendgrid/mail')
-        sgMail = sg.default
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-      } catch (error) {
-        console.log('SendGrid not available:', error)
-      }
     }
 
     servicesInitialized = true
@@ -42,7 +31,7 @@ export async function GET() {
     message: 'Send Combo Bulk API is running',
     services: {
       database: !!process.env.DATABASE_URL,
-      sendgrid: !!(process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.')),
+      gmail: !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD),
       httpsms: !!(process.env.HTTPSMS_API_KEY && process.env.HTTPSMS_PHONE_ID)
     }
   })
@@ -122,23 +111,21 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to create invitation record:', error)
     }
 
-    // Send emails with SendGrid only
+    // Send emails with Gmail
     let emailResults = { sent: 0, failed: 0, errors: [] as any[] }
-    if ((sendMethod === 'email' || sendMethod === 'combo') && emailSubject && emailContent && sgMail) {
+    if ((sendMethod === 'email' || sendMethod === 'combo') && emailSubject && emailContent) {
+      const transporter = createTransporter()
+      
       for (const recipient of allRecipients) {
         try {
           const personalizedSubject = emailSubject.replace(/\{\{name\}\}/g, recipient.name)
           const personalizedContent = emailContent.replace(/\{\{name\}\}/g, recipient.name)
 
-          await sgMail.send({
+          await transporter.sendMail({
             to: recipient.email,
-            from: process.env.SENDGRID_FROM_EMAIL || 'noreply@example.com',
+            from: `"College Invitation System" <${process.env.GMAIL_USER}>`,
             subject: personalizedSubject,
-            html: personalizedContent,
-            trackingSettings: {
-              clickTracking: { enable: false },
-              openTracking: { enable: false }
-            }
+            html: personalizedContent
           })
 
           emailResults.sent++

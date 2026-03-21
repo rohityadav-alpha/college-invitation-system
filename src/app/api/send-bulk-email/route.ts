@@ -1,9 +1,7 @@
 // Original API with Anti-Spam Enhancements
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import sgMail from '@sendgrid/mail'
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+import { createTransporter } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,42 +56,26 @@ export async function POST(request: NextRequest) {
         .replace(/🎉|🚀|✨/g, '') // Remove excessive emojis
     }
 
-    // Prepare ANTI-SPAM personalized emails
-    const personalizedEmails = students.map((student: { id: string; name: string; email: string }) => ({
-      to: student.email,
-      from: {
-        email: process.env.SENDGRID_FROM_EMAIL!,
-        name: 'College Committee'
-      },
-      subject: cleanSubject(subject, student.name),
-      html: cleanContent(content, student.name),
-      
-      // Anti-spam headers
-      headers: {
-        'List-Unsubscribe': '<mailto:unsubscribe@college.edu>',
-        'List-Id': 'College Events <events.college.edu>'
-      },
-      
-      // Categories for reputation
-      categories: ['college-invitation', 'student-invite'],
-      
-      // Disable tracking for better deliverability
-      trackingSettings: {
-        clickTracking: { enable: false },
-        openTracking: { enable: false }
-      }
-    }))
+    const transporter = createTransporter()
 
-    // Send in batches
-    const BATCH_SIZE = 50
-    for (let i = 0; i < personalizedEmails.length; i += BATCH_SIZE) {
-      const batch = personalizedEmails.slice(i, i + BATCH_SIZE)
-      await sgMail.send(batch)
+    // Send individually since Nodemailer doesn't support array payloads like SendGrid
+    for (const student of students) {
+      const personalizedSubject = cleanSubject(subject, student.name)
+      const personalizedContent = cleanContent(content, student.name)
+
+      await transporter.sendMail({
+        from: `"College Committee" <${process.env.GMAIL_USER}>`,
+        to: student.email,
+        subject: personalizedSubject,
+        html: personalizedContent,
+        headers: {
+          'List-Unsubscribe': '<mailto:unsubscribe@college.edu>',
+          'List-Id': 'College Events <events.college.edu>'
+        }
+      })
       
-      // Delay between batches
-      if (i + BATCH_SIZE < personalizedEmails.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      }
+      // Small delay between emails
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
 
     // Log successful emails

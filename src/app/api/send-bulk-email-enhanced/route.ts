@@ -1,9 +1,7 @@
 // Enhanced Anti-Spam Bulk Email API with Error Handling
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import sgMail from '@sendgrid/mail'
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+import { createTransporter } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,17 +22,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check SendGrid config
-    if (!process.env.SENDGRID_API_KEY) {
+    // Check Gmail config
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
       return NextResponse.json(
-        { error: 'SendGrid API key not configured' },
-        { status: 500 }
-      )
-    }
-
-    if (!process.env.SENDGRID_FROM_EMAIL) {
-      return NextResponse.json(
-        { error: 'SendGrid FROM email not configured' },
+        { error: 'Gmail credentials not configured' },
         { status: 500 }
       )
     }
@@ -84,7 +75,7 @@ export async function POST(request: NextRequest) {
       
       allEmails.push({
         to: student.email,
-        from: process.env.SENDGRID_FROM_EMAIL!, // Simple string format
+        from: `"College Invitation System" <${process.env.GMAIL_USER}>`,
         subject: personalizedSubject,
         html: personalizedContent,
         recipientData: { id: student.id, type: 'student' }
@@ -98,7 +89,7 @@ export async function POST(request: NextRequest) {
       
       allEmails.push({
         to: guest.email,
-        from: process.env.SENDGRID_FROM_EMAIL!,
+        from: `"College Invitation System" <${process.env.GMAIL_USER}>`,
         subject: personalizedSubject,
         html: personalizedContent,
         recipientData: { id: guest.id, type: 'guest' }
@@ -112,16 +103,16 @@ export async function POST(request: NextRequest) {
       
       allEmails.push({
         to: professor.email,
-        from: process.env.SENDGRID_FROM_EMAIL!,
+        from: `"College Invitation System" <${process.env.GMAIL_USER}>`,
         subject: personalizedSubject,
         html: personalizedContent,
         recipientData: { id: professor.id, type: 'professor' }
       })
     }
 
-    console.log('📧 Attempting to send emails:', {
+    console.log('📧 Attempting to send emails via Gmail:', {
       totalEmails: allEmails.length,
-      fromEmail: process.env.SENDGRID_FROM_EMAIL,
+      fromEmail: process.env.GMAIL_USER,
       sampleEmail: allEmails[0] ? {
         to: allEmails[0].to,
         subject: allEmails[0].subject.substring(0, 50),
@@ -129,8 +120,7 @@ export async function POST(request: NextRequest) {
       } : 'None'
     })
 
-    // Remove recipient data for sending
-    const emailsToSend = allEmails.map(({ recipientData, ...email }) => email)
+    const transporter = createTransporter()
 
     // Send emails with detailed error handling
     try {
@@ -138,26 +128,28 @@ export async function POST(request: NextRequest) {
       let successCount = 0
       let failedEmails = []
 
-      for (let i = 0; i < emailsToSend.length; i++) {
+      for (let i = 0; i < allEmails.length; i++) {
+        const emailOptions = allEmails[i]
         try {
-          await sgMail.send(emailsToSend[i])
+          await transporter.sendMail({
+            from: emailOptions.from,
+            to: emailOptions.to,
+            subject: emailOptions.subject,
+            html: emailOptions.html
+          })
           successCount++
           
           // Small delay between emails
-          if (i < emailsToSend.length - 1) {
+          if (i < allEmails.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 100))
           }
         } catch (emailError: any) {
-          console.error(`❌ Failed to send email to ${emailsToSend[i].to}:`, {
-            code: emailError.code,
-            message: emailError.message,
-            response: emailError.response?.body || 'No response body'
-          })
+          console.error(`❌ Failed to send email to ${emailOptions.to}:`, emailError.message)
           
           failedEmails.push({
-            email: emailsToSend[i].to,
+            email: emailOptions.to,
             error: emailError.message,
-            code: emailError.code
+            code: emailError.code || 500
           })
         }
       }
@@ -195,28 +187,11 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (sendError: any) {
-      console.error('❌ SendGrid send error details:', {
-        code: sendError.code,
-        message: sendError.message,
-        response: sendError.response?.body,
-        stack: sendError.stack
-      })
-
-      // Try to extract specific error details
-      let errorDetails = 'Unknown SendGrid error'
-      if (sendError.response?.body?.errors) {
-        errorDetails = sendError.response.body.errors.map((e: any) => 
-          `${e.field || 'field'}: ${e.message || 'error'}`
-        ).join(', ')
-      } else if (sendError.message) {
-        errorDetails = sendError.message
-      }
-
+      console.error('❌ Gmail send error details:', sendError)
       return NextResponse.json(
         { 
-          error: `SendGrid API Error: ${errorDetails}`,
-          code: sendError.code,
-          details: sendError.response?.body || null
+          error: `Gmail API Error: ${sendError.message}`,
+          code: sendError.code
         },
         { status: 500 }
       )

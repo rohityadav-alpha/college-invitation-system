@@ -1,383 +1,115 @@
-<div align="center">
-
 # 🎓 College Invitation System
 
-### AI-Powered Multi-Channel Communication Platform for Educational Institutions
+A full-stack, multi-channel event invitation management platform built for colleges and institutions. Manage students, guests, and professors — then send personalized invitations via **Email**, **SMS**, and **WhatsApp** — all from one place.
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://prisma.io/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Vercel](https://img.shields.io/badge/vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+---
 
-<p align="center">
-  <img src="https://img.shields.io/github/stars/rohityadav-alpha/college-invitation-system?style=social" alt="GitHub stars">
-  <img src="https://img.shields.io/github/forks/rohityadav-alpha/college-invitation-system?style=social" alt="GitHub forks">
-  <img src="https://img.shields.io/github/license/rohityadav-alpha/college-invitation-system" alt="License">
-  <img src="https://img.shields.io/github/last-commit/rohityadav-alpha/college-invitation-system" alt="Last commit">
-</p>
+## 📋 Table of Contents
 
-**🌟 [Live Demo](https://college-invitation-system.vercel.app)** • **📖 [Documentation](#-installation-guide)** • **🚀 [Quick Start](#-quick-start)**
-
-</div>
+- [Overview](#-overview)
+- [Live Demo](#-live-demo)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Database Schema](#-database-schema)
+- [API Reference](#-api-reference)
+- [Pages & UI](#-pages--ui)
+- [Environment Variables](#-environment-variables)
+- [Installation & Setup](#-installation--setup)
+- [Running Locally](#-running-locally)
+- [Deployment (Vercel)](#-deployment-vercel)
+- [Communication Channels](#-communication-channels)
+- [Admin System](#-admin-system)
+- [CSV Import](#-csv-import)
+- [AI-Powered Features](#-ai-powered-features)
+- [Flowcharts](#-flowcharts)
+- [Contributing](#-contributing)
 
 ---
 
 ## 🌟 Overview
 
-A comprehensive **AI-powered invitation management system** designed specifically for educational institutions. Streamline your college communication with multi-channel messaging, recipient management, and intelligent content generation - all in one powerful platform.
+The **College Invitation System** is a Next.js 16 web application designed to streamline the process of inviting attendees to college events (seminars, workshops, cultural programs, convocations, etc.).
 
-### 🎯 Key Highlights
-- **🤖 AI-Generated Content** - Smart email, WhatsApp & SMS templates
-- **📊 Multi-Channel Campaigns** - Email + WhatsApp + SMS simultaneously
-- **👥 Complete User Management** - Students, Guests & Professors
-- **📱 Mobile-First Design** - Responsive across all devices
-- **🚀 Production Ready** - Deployed on Vercel with enterprise-grade architecture
+The system supports **three types of recipients**:
+- 🎓 **Students** — enrolled in courses at the college
+- 🧑‍💼 **Guests** — external visitors (VIPs, industry professionals, alumni, media, sponsors)
+- 👨‍🏫 **Professors** — academic faculty from various institutions
+
+Admins can compose rich HTML invitations, select recipients, and dispatch them simultaneously over **Email (Gmail via Nodemailer)**, **SMS (Twilio / HttpSms)**, and **WhatsApp (Twilio)**. Every delivery is logged with full analytics.
+
+---
+
+## 🚀 Live Demo
+
+> Deployed on **Vercel** with **Neon PostgreSQL** as the database.
 
 ---
 
 ## ✨ Features
 
-### 🤖 AI-Powered Content Generation
-| Feature | Description |
-|---------|-------------|
-| **Smart Email Templates** | Context-aware HTML email generation with personalization |
-| **WhatsApp Optimizer** | Message formatting with emoji optimization |
-| **SMS Generator** | 160-character optimized content with dynamic variables |
-| **Multi-Style Support** | Professional, Casual, Exciting, and Formal tones |
-| **Variable Replacement** | Automatic `{{name}}`, `{{eventName}}` personalization |
+### 👥 Recipient Management
+- **Student Registration** — Register with name, email, course, year, and optional phone number
+- **Guest Registration** — Register with name, email, organization, designation, phone, and category (guest / VIP / alumni / industry / media / sponsor / speaker)
+- **Professor Registration** — Register with name, email, college, department, designation, phone, and area of expertise
+- **CSV Bulk Import** — Upload a `.csv` file to batch-import guests (and students)
+- **CRUD Operations** — Full create, read, update, delete for all recipient types via the admin panel
+- **Search & Filter** — Search recipients by name, email, course, organization, etc.
+- **Pagination** — Server-side paginated list views
 
-### 📧 Multi-Channel Communication
-| Channel | Features |
-|---------|----------|
-| **📧 Email** | Bulk campaigns, HTML templates, delivery tracking |
-| **📱 WhatsApp** | Auto-generated links, phone number formatting |
-| **📲 SMS** | httpSMS integration, rate limiting, delivery status |
-| **🚀 Combo Mode** | Send across all channels simultaneously |
-| **📊 Analytics** | Open rates, delivery status, campaign performance |
+### ✉️ Multi-Channel Messaging
+| Channel | Provider | Status Tracking |
+|---------|----------|-----------------|
+| Email | Gmail (Nodemailer) | ✅ sent / failed |
+| SMS | Twilio | ✅ sent / delivered / failed |
+| SMS (alt) | HttpSms | ✅ sent / failed |
+| WhatsApp | Twilio | ✅ sent / delivered / read / failed |
 
-### 👥 Comprehensive User Management
-| Category | Management Features |
-|----------|-------------------|
-| **👨‍🎓 Students** | Course tracking, year management, CSV import/export |
-| **👤 Guests** | Organization details, designation, category management |
-| **👨‍🏫 Professors** | Department mapping, expertise tracking, college affiliation |
-| **🔄 CRUD Operations** | Full Create, Read, Update, Delete functionality |
-| **🔍 Advanced Search** | Filter by course, year, department, category |
+### 📝 Invitation Composer
+- Rich HTML invitation editor
+- `{{name}}` personalization placeholder (auto-replaced with each recipient's name)
+- Select recipients from students, guests, and/or professors
+- Send to one or all categories simultaneously
+- **AI-powered invitation generation** using Google Gemini API
 
-### 📊 Advanced Features
-- **📈 Analytics Dashboard** - Real-time campaign performance
-- **📱 Responsive Design** - Mobile-first approach
-- **🔐 Admin Authentication** - Secure access control
-- **🎨 Professional UI** - Clean, modern interface with icons
-- **⚡ Performance Optimized** - Fast loading, efficient queries
-- **📂 Bulk Operations** - CSV import/export, mass updates
+### 📊 Analytics & Logs
+- Per-invitation analytics: total sent, delivered, opened, clicked, failed, pending
+- Email logs with timestamps (sentAt, deliveredAt, openedAt, clickedAt)
+- SMS logs with sentAt and deliveredAt timestamps
+- WhatsApp logs with sentAt, deliveredAt, and readAt timestamps
+- Delivery rate and open rate percentages
+- Retry failed emails with a single click
 
----
+### 🔐 Admin System
+- Password-protected admin area
+- JWT-style token stored in localStorage
+- Admin-only routes protected by `AdminProtection` component
+- Admin can view/manage all data; regular users can only self-register
 
-## 🛠️ Technology Stack
-
-<div align="center">
-
-| **Category** | **Technologies** |
-|:---|:---|
-| **Frontend** | Next.js 15, TypeScript, Tailwind CSS, React Icons |
-| **Backend** | Next.js API Routes, Prisma ORM |
-| **Database** | PostgreSQL (Neon Serverless) |
-| **AI Integration** | Google Gemini AI |
-| **Email Service** | SendGrid |
-| **SMS Service** | httpSMS |
-| **Authentication** | Custom Admin System |
-| **Deployment** | Vercel |
-| **Development** | ESLint, Prettier, TypeScript |
-
-</div>
+### 📱 Responsive UI
+- Mobile-first, fully responsive design
+- Sticky navigation with mobile hamburger menu
+- Active-link highlighting in the navbar
+- Gradient backgrounds, card hover animations, and scale transitions
 
 ---
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-Before you begin, ensure you have:
-
-```
-✅ Node.js 18+ installed
-✅ npm or yarn package manager
-✅ Git for version control
-✅ Basic knowledge of React/Next.js
-```
-
-### ⚡ One-Command Setup
-
-```
-# Clone and setup in one go
-git clone https://github.com/rohityadav-alpha/college-invitation-system.git
-cd college-invitation-system && npm install && cp .env.example .env.local
-```
-
----
-
-## 📋 Complete Installation Guide
-
-### **Step 1: Repository Setup**
-
-```
-# Clone the repository
-git clone https://github.com/rohityadav-alpha/college-invitation-system.git
-
-# Navigate to project directory
-cd college-invitation-system
-
-# Install dependencies
-npm install
-# or
-yarn install
-```
-
-### **Step 2: Environment Configuration**
-
-Create your environment file:
-
-```
-# Copy environment template
-cp .env.example .env.local
-```
-
----
-
-## 🔑 API Keys & Services Setup
-
-### **1. 🗄️ Neon Database Setup (PostgreSQL)**
-
-#### **Create Neon Database:**
-1. **Visit:** [https://neon.tech](https://neon.tech)
-2. **Sign Up:** Create account with GitHub/Google
-3. **Create Project:**
-   - Project Name: `College Invitation System`
-   - Region: Choose nearest to your location
-   - PostgreSQL Version: Latest stable
-4. **Get Connection String:**
-   - Go to Dashboard → Connection Details
-   - Copy **Connection String**
-   - Format: `postgresql://username:password@ep-xyz.us-east-2.aws.neon.tech/database?sslmode=require`
-
-#### **Add to .env.local:**
-```
-DATABASE_URL="postgresql://username:password@ep-xyz.us-east-2.aws.neon.tech/database?sslmode=require"
-```
-
----
-
-### **2. 🤖 Google Gemini AI Setup**
-
-#### **Get Gemini API Key:**
-1. **Visit:** [https://ai.google.dev](https://ai.google.dev)
-2. **Get API Key:**
-   - Click "Get API Key in Google AI Studio"
-   - Sign in with Google account
-3. **Create New Project:**
-   - Select existing project or create new
-   - Enable Generative AI API
-4. **Generate API Key:**
-   - Go to "API Keys" section
-   - Click "Create API Key"
-   - Copy the key (starts with `AIza...`)
-
-#### **Add to .env.local:**
-```
-GEMINI_API_KEY="AIzaSyC-your_actual_gemini_api_key_here"
-```
-
----
-
-### **3. 📧 SendGrid Email Setup**
-
-#### **Create SendGrid Account:**
-1. **Visit:** [https://sendgrid.com](https://sendgrid.com)
-2. **Sign Up:** Free account (100 emails/day)
-3. **Verify Email:** Confirm your email address
-4. **Domain Authentication:**
-   - Go to Settings → Sender Authentication
-   - Authenticate your domain (or use single sender verification)
-
-#### **Get API Key:**
-1. **Settings → API Keys**
-2. **Create API Key:**
-   - Name: `College Invitation System`
-   - Permissions: Full Access or Mail Send only
-3. **Copy API Key** (starts with `SG.`)
-
-#### **Add to .env.local:**
-```
-SENDGRID_API_KEY="SG.your_actual_sendgrid_api_key_here"
-SENDGRID_FROM_EMAIL="noreply@yourdomain.com"
-```
-
-**⚠️ Important:** Replace `noreply@yourdomain.com` with verified sender email.
-
----
-
-### **4. 📱 httpSMS Setup (Optional)**
-
-#### **Setup Android Phone SMS:**
-1. **Download App:**
-   - Install [httpSMS](https://play.google.com/store/apps/details?id=com.httpsms) from Play Store
-   - Open app on your Android phone
-2. **Create Account:**
-   - Sign up with email/phone
-   - Complete phone verification
-3. **Get API Credentials:**
-   - Go to Settings → API
-   - Copy **API Key** (starts with `httpsms_`)
-   - Note your **Phone ID** (format: `+919876543210`)
-
-#### **Add to .env.local:**
-```
-HTTPSMS_API_KEY="httpsms_your_actual_api_key_here"
-HTTPSMS_PHONE_ID="+919876543210"
-```
-
-**📱 Note:** Your phone must stay online for SMS sending to work.
-
----
-
-### **5. 🔐 Admin Authentication Setup**
-
-#### **Configure Admin Credentials:**
-
-```
-ADMIN_EMAIL="admin@yourcollege.edu"
-ADMIN_PASSWORD="your_secure_password_123"
-NEXTAUTH_SECRET="generate_random_32_char_secret_here"
-NEXTAUTH_URL="http://localhost:3000"
-```
-
-#### **Generate Secure Secret:**
-```
-# Generate random secret
-openssl rand -base64 32
-# or visit: https://generate-secret.vercel.app/32
-```
-
----
-
-## 📝 Complete .env.local Template
-
-```
-# ===== DATABASE CONFIGURATION =====
-DATABASE_URL="postgresql://username:password@ep-xyz.us-east-2.aws.neon.tech/database?sslmode=require"
-
-# ===== AI CONFIGURATION =====
-GEMINI_API_KEY="AIzaSyC-your_actual_gemini_api_key_here"
-
-# ===== EMAIL CONFIGURATION =====
-SENDGRID_API_KEY="SG.your_actual_sendgrid_api_key_here"
-SENDGRID_FROM_EMAIL="noreply@yourdomain.com"
-
-# ===== SMS CONFIGURATION (Optional) =====
-HTTPSMS_API_KEY="httpsms_your_api_key_here"
-HTTPSMS_PHONE_ID="+919876543210"
-
-# ===== AUTHENTICATION =====
-ADMIN_EMAIL="admin@yourcollege.edu"
-ADMIN_PASSWORD="your_secure_password"
-NEXTAUTH_SECRET="your_random_32_character_secret_key"
-NEXTAUTH_URL="http://localhost:3000"
-
-# ===== ENVIRONMENT =====
-NODE_ENV="development"
-```
-
----
-
-## 🗄️ Database Setup
-
-### **Initialize Database:**
-
-```
-# Generate Prisma client
-npx prisma generate
-
-# Push database schema
-npx prisma db push
-
-# (Optional) Open Prisma Studio to view data
-npx prisma studio
-```
-
-### **Database Schema Overview:**
-
-The system uses the following main entities:
-
-```
--- Students Table
-Student {
-  id: String (Primary Key)
-  name: String
-  email: String (Unique)
-  course: String
-  year: String
-  phone: String (Optional)
-  createdAt: DateTime
-}
-
--- Guests Table  
-Guest {
-  id: String (Primary Key)
-  name: String
-  email: String (Unique)
-  organization: String
-  designation: String
-  category: String
-  phone: String (Optional)
-  createdAt: DateTime
-}
-
--- Professors Table
-Professor {
-  id: String (Primary Key)
-  name: String
-  email: String (Unique)
-  college: String
-  department: String
-  designation: String
-  expertise: String (Optional)
-  phone: String (Optional)
-  createdAt: DateTime
-}
-
--- Invitations & Logs Tables
-Invitation, EmailLog, etc.
-```
-
----
-
-## 🚀 Development
-
-### **Start Development Server:**
-
-```
-# Start development server
-npm run dev
-# or
-yarn dev
-
-# Server will be available at: http://localhost:3000
-```
-
-### **Available Scripts:**
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run type-check` | TypeScript type checking |
-| `npx prisma studio` | Open database GUI |
-| `npx prisma generate` | Generate Prisma client |
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | **Next.js 16** (App Router, Turbopack) |
+| Language | **TypeScript 5** |
+| Styling | **Tailwind CSS v4** |
+| Database ORM | **Prisma 6** |
+| Database | **PostgreSQL** (Neon serverless) |
+| Email Service | **Gmail (via Nodemailer)** |
+| SMS Service | **Twilio** + **HttpSms** (fallback) |
+| WhatsApp | **Twilio WhatsApp API** |
+| AI | **Google Gemini API** (`@google/generative-ai`) |
+| Icons | **Lucide React** + **React Icons** |
+| Deployment | **Vercel** |
+| Runtime | **Node.js 20+** |
 
 ---
 
@@ -385,467 +117,691 @@ yarn dev
 
 ```
 college-invitation-system/
-├── 📁 src/
-│   ├── 📁 app/                      # Next.js App Router
-│   │   ├── 📁 api/                  # API Routes
-│   │   │   ├── 📁 students/         # Student CRUD operations
-│   │   │   ├── 📁 guests/           # Guest management
-│   │   │   ├── 📁 professors/       # Professor management
-│   │   │   ├── 📁 generate-*/       # AI content generation
-│   │   │   ├── 📁 send-*/           # Communication APIs
-│   │   │   └── 📁 admin/            # Authentication
-│   │   ├── 📁 students/             # Student management pages
-│   │   ├── 📁 guests/               # Guest management pages
-│   │   ├── 📁 professors/           # Professor management pages
-│   │   ├── 📁 compose/              # Message composer
-│   │   ├── 📁 invitations/          # Invitation history
-│   │   ├── 📁 dashboard/            # Admin dashboard
-│   │   ├── layout.tsx               # Root layout
-│   │   └── page.tsx                 # Homepage
-│   ├── 📁 components/               # Reusable components
-│   │   ├── 📁 icons/                # Icon system
-│   │   ├── AdminProtection.tsx      # Auth protection
-│   │   └── Navigation.tsx           # Main navigation
-│   ├── 📁 hooks/                    # Custom React hooks
-│   └── 📁 lib/                      # Utility functions
-│       ├── prisma.ts                # Database client
-│       └── email.ts                 # Email utilities
-├── 📁 prisma/                       # Database schema
-│   └── schema.prisma                # Prisma schema file
-├── 📁 public/                       # Static assets
-├── 📄 .env.example                  # Environment template
-├── 📄 .env.local                    # Your environment (ignored by git)
-├── 📄 next.config.ts                # Next.js configuration
-├── 📄 tailwind.config.ts            # Tailwind configuration
-├── 📄 package.json                  # Dependencies & scripts
-└── 📄 README.md                     # This file
+│
+├── prisma/
+│   ├── schema.prisma             # Database models (Student, Guest, Professor, Invitation, EmailLog, SMSLog, WhatsAppLog)
+│   └── migrations/               # Auto-generated Prisma migration files
+│
+├── public/
+│   ├── sample_guests.csv         # Sample CSV template for bulk guest import
+│   └── *.svg                     # Static icons/images
+│
+├── src/
+│   ├── app/                      # Next.js App Router pages
+│   │   ├── page.tsx              # Home page — Public registration forms (Student / Guest / Professor)
+│   │   ├── layout.tsx            # Root layout with global font and metadata
+│   │   ├── globals.css           # Global CSS reset and Tailwind base
+│   │   │
+│   │   ├── dashboard/
+│   │   │   └── page.tsx          # Admin dashboard with stats & quick actions
+│   │   │
+│   │   ├── students/
+│   │   │   └── page.tsx          # Admin: list, add, edit, delete, import students
+│   │   │
+│   │   ├── guests/
+│   │   │   └── page.tsx          # Admin: list, add, edit, delete, import guests
+│   │   │
+│   │   ├── professors/
+│   │   │   └── page.tsx          # Admin: list, add, edit, delete professors
+│   │   │
+│   │   ├── compose/
+│   │   │   └── page.tsx          # Admin: compose & send invitations (email/SMS/WhatsApp)
+│   │   │
+│   │   ├── invitations/
+│   │   │   ├── page.tsx          # Admin: list all invitations with analytics
+│   │   │   └── [id]/             # Dynamic route: single invitation detail & logs
+│   │   │
+│   │   ├── email-test/
+│   │   │   └── page.tsx          # Admin: test email sending functionality
+│   │   │
+│   │   ├── test/
+│   │   │   └── page.tsx          # Developer testing page
+│   │   │
+│   │   └── api/                  # REST API route handlers
+│   │       ├── admin/            # Admin login & auth
+│   │       ├── students/         # CRUD for students
+│   │       ├── guests/           # CRUD for guests
+│   │       ├── professors/       # CRUD for professors
+│   │       ├── invitations/      # CRUD for invitations + logs
+│   │       ├── send-bulk-email/          # Send email to all selected recipients
+│   │       ├── send-bulk-email-enhanced/ # Enhanced bulk email with analytics tracking
+│   │       ├── send-combo-bulk/          # Combined email + SMS + WhatsApp dispatch
+│   │       ├── retry-failed-emails/      # Retry email sending for failed logs
+│   │       ├── generate-invitation/      # AI-generated invitation content (Gemini)
+│   │       ├── generate-sms/             # AI-generated SMS message content
+│   │       ├── generate-whatsapp/        # AI-generated WhatsApp message content
+│   │       ├── sms-templates/            # SMS message templates
+│   │       ├── whatsapp-templates/       # WhatsApp message templates
+│   │       ├── send-phone-sms/           # Send SMS via HttpSms provider
+│   │       ├── send-whatsapp-web/        # Send WhatsApp messages via Twilio
+│   │       ├── test-email/               # Test a single email send
+│   │       └── test-phone-sms/           # Test a single SMS send
+│   │
+│   ├── components/
+│   │   ├── Navigation.tsx        # Responsive sticky navbar with active-link states
+│   │   ├── AdminProtection.tsx   # HOC to guard admin-only pages
+│   │   └── icons/
+│   │       └── AppIcons.tsx      # Centralized icon registry (Lucide React)
+│   │
+│   ├── hooks/
+│   │   └── useAuth.ts            # Custom hook: admin login / logout / token management
+│   │
+│   └── lib/
+│       ├── prisma.ts             # Prisma client singleton (dev + prod safe)
+│       ├── email.ts              # Gmail Nodemailer helper: sendBulkEmails, sendTestEmail, sendSingleEmail
+│       └── types.ts              # Shared TypeScript interfaces for all models & API responses
+│
+├── .env                          # Environment variables (never commit secrets!)
+├── .gitignore                    # Git ignored files
+├── next.config.ts                # Next.js config (ESLint/TS ignored in build, standalone output)
+├── vercel.json                   # Vercel config (30s max function duration for API routes)
+├── tailwind.config.ts            # Tailwind CSS configuration
+├── postcss.config.mjs            # PostCSS config
+├── tsconfig.json                 # TypeScript compiler options
+├── eslint.config.mjs             # ESLint configuration
+├── flowchart.mermaid             # System flowchart (Mermaid format)
+├── flowchart-raw.mmd             # Raw Mermaid source
+└── package.json                  # Dependencies and npm scripts
 ```
 
 ---
 
-## 🔌 API Documentation
+## 🗃️ Database Schema
 
-### **Authentication Endpoints**
-```
-POST /api/admin/login          # Admin login
-```
+The PostgreSQL database is managed via **Prisma ORM**. The schema lives in `prisma/schema.prisma`.
 
-### **User Management**
-```
-# Students
-GET    /api/students           # Get all students
-POST   /api/students           # Create student
-PUT    /api/students?id=xxx    # Update student
-DELETE /api/students?id=xxx    # Delete student
-GET    /api/students/export    # Export to CSV
-POST   /api/students/import    # Import from CSV
+### Models
 
-# Guests (same pattern)
-GET    /api/guests             # Get all guests
-POST   /api/guests             # Create guest
-# ... and so on
+#### `Student`
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (cuid) | Primary key |
+| `name` | String | Full name |
+| `email` | String | Unique |
+| `course` | String | e.g., "Computer Science" |
+| `year` | String | e.g., "2nd Year" |
+| `phone` | String? | Optional |
+| `createdAt` | DateTime | Auto-set |
 
-# Professors (same pattern)
-GET    /api/professors         # Get all professors
-POST   /api/professors         # Create professor
-# ... and so on
-```
+#### `Guest`
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (cuid) | Primary key |
+| `name` | String | Full name |
+| `email` | String | Unique |
+| `organization` | String? | Company/institution |
+| `designation` | String? | Job title |
+| `phone` | String? | Optional |
+| `category` | String | Default: "guest" (guest/vip/alumni/industry/media/sponsor/speaker) |
+| `createdAt` | DateTime | Auto-set |
 
-### **AI Content Generation**
-```
-POST /api/generate-invitation  # Generate email content
-POST /api/generate-whatsapp   # Generate WhatsApp message
-POST /api/generate-sms        # Generate SMS content
-```
+#### `Professor`
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (cuid) | Primary key |
+| `name` | String | Full name |
+| `email` | String | Unique |
+| `college` | String | Institution name |
+| `department` | String | e.g., "Computer Science" |
+| `designation` | String | Default: "Professor" |
+| `phone` | String? | Optional |
+| `expertise` | String? | Subject area |
+| `createdAt` | DateTime | Auto-set |
 
-### **Communication**
-```
-POST /api/send-bulk-email-enhanced    # Send bulk emails
-POST /api/send-whatsapp-web          # Generate WhatsApp links
-POST /api/send-phone-sms             # Send SMS via phone
-POST /api/send-combo-bulk            # Multi-channel campaign
-```
+#### `Invitation`
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (cuid) | Primary key |
+| `title` | String | Invitation title |
+| `subject` | String | Email subject line |
+| `content` | String (Text) | HTML body content |
+| `createdAt` | DateTime | Auto-set |
+| `sentCount` | Int | Total messages dispatched |
+| `deliveredCount` | Int | Confirmed deliveries |
+| `openedCount` | Int | Email open events |
+| `clickedCount` | Int | Link click events |
+| `failedCount` | Int | Failed deliveries |
 
-### **Analytics**
-```
-GET  /api/invitations          # Get invitation history
-POST /api/invitations          # Create invitation record
-GET  /api/invitations/[id]     # Get specific invitation
-```
+#### `EmailLog`
+Tracks every individual email sent.
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (cuid) | Primary key |
+| `studentId` | String? | FK → Student (nullable) |
+| `guestId` | String? | FK → Guest (nullable) |
+| `professorId` | String? | FK → Professor (nullable) |
+| `invitationId` | String | FK → Invitation |
+| `recipientType` | String | "student" / "guest" / "professor" |
+| `status` | String | sent / delivered / opened / clicked / failed |
+| `sentAt` | DateTime | When sent |
+| `deliveredAt` | DateTime? | When delivered |
+| `openedAt` | DateTime? | When email opened |
+| `clickedAt` | DateTime? | When link clicked |
+| `errorMessage` | String? | Error detail if failed |
+| `messageId` | String? | Nodemailer message ID |
 
----
+#### `SMSLog`
+Tracks every individual SMS sent.
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (cuid) | Primary key |
+| `studentId` / `guestId` / `professorId` | String? | FK to recipient |
+| `invitationId` | String | FK → Invitation |
+| `recipientType` | String | "student" / "guest" / "professor" |
+| `phoneNumber` | String | Actual number used |
+| `status` | String | sent / delivered / failed / pending |
+| `sentAt` | DateTime | When sent |
+| `deliveredAt` | DateTime? | When delivered |
+| `errorMessage` | String? | Error detail if failed |
+| `messageId` | String? | Provider's message ID |
 
-## 🎯 Usage Examples
+#### `WhatsAppLog`
+Tracks every individual WhatsApp message sent.
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | String (cuid) | Primary key |
+| `studentId` / `guestId` / `professorId` | String? | FK to recipient |
+| `invitationId` | String | FK → Invitation |
+| `recipientType` | String | "student" / "guest" / "professor" |
+| `phoneNumber` | String | Actual WhatsApp number |
+| `status` | String | sent / delivered / read / failed / pending |
+| `sentAt` | DateTime | When sent |
+| `deliveredAt` | DateTime? | When delivered |
+| `readAt` | DateTime? | When message was read (WhatsApp read receipts) |
+| `errorMessage` | String? | Error detail if failed |
+| `messageId` | String? | Twilio message SID |
 
-### **1. AI Email Generation**
-
-```
-const generateEmail = async () => {
-  const response = await fetch('/api/generate-invitation', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      eventType: 'Technical Workshop',
-      eventName: 'React.js Masterclass',
-      committeeName: 'Technical Committee', 
-      venue: 'Main Auditorium',
-      date: '2025-12-25',
-      time: '10:00 AM',
-      additionalInfo: 'Bring your laptops'
-    })
-  })
-  
-  const result = await response.json()
-  console.log(result.content) // Generated HTML email
-}
-```
-
-### **2. Multi-Channel Campaign**
-
-```
-const sendComboCampaign = async () => {
-  const response = await fetch('/api/send-combo-bulk', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      emailSubject: 'Workshop Invitation',
-      emailContent: '<h1>Join our React.js Workshop</h1>',
-      whatsappMessage: 'Hi {{name}}! Join our React.js workshop...',
-      smsMessage: 'Workshop alert: React.js Masterclass on Dec 25',
-      studentIds: ['student1', 'student2'],
-      guestIds: ['guest1'],
-      sendMethod: 'combo' // email + whatsapp + sms
-    })
-  })
-  
-  const result = await response.json()
-  console.log(`Campaign sent to ${result.data.totalRecipients} recipients`)
-}
-```
-
-### **3. Bulk User Import**
-
-```
-const importStudents = async (csvFile) => {
-  const formData = new FormData()
-  formData.append('file', csvFile)
-  
-  const response = await fetch('/api/students/import', {
-    method: 'POST',
-    body: formData
-  })
-  
-  const result = await response.json()
-  console.log(`Imported ${result.imported} students`)
-}
-```
+### Relationships
+- `Student` / `Guest` / `Professor` ↔ `EmailLog` (1-to-many, cascade delete)
+- `Student` / `Guest` / `Professor` ↔ `SMSLog` (1-to-many, cascade delete)
+- `Student` / `Guest` / `Professor` ↔ `WhatsAppLog` (1-to-many, cascade delete)
+- `Invitation` ↔ `EmailLog` / `SMSLog` / `WhatsAppLog` (1-to-many, cascade delete)
 
 ---
 
-## 🚀 Deployment
+## 🔌 API Reference
 
-### **Deploy to Vercel (Recommended)**
+All API routes are under `/api/` and return JSON.
 
-#### **Step 1: Prepare for Deployment**
+### Auth
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/api/admin/login` | Verify admin password, returns a token |
 
-```
-# Ensure all changes are committed
-git add .
-git commit -m "Ready for deployment"
-git push origin main
-```
+### Students
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/students` | List all students (supports search & pagination) |
+| `POST` | `/api/students` | Create a new student |
+| `PUT` | `/api/students/[id]` | Update a student |
+| `DELETE` | `/api/students/[id]` | Delete a student |
 
-#### **Step 2: Connect to Vercel**
+### Guests
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/guests` | List all guests |
+| `POST` | `/api/guests` | Create a new guest |
+| `PUT` | `/api/guests/[id]` | Update a guest |
+| `DELETE` | `/api/guests/[id]` | Delete a guest |
 
-1. **Visit:** [https://vercel.com](https://vercel.com)
-2. **Import Project:** Connect your GitHub repository
-3. **Configure:**
-   - Project Name: `college-invitation-system`
-   - Framework: Next.js (auto-detected)
-   - Root Directory: `./`
+### Professors
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/professors` | List all professors |
+| `POST` | `/api/professors` | Create a new professor |
+| `PUT` | `/api/professors/[id]` | Update a professor |
+| `DELETE` | `/api/professors/[id]` | Delete a professor |
 
-#### **Step 3: Environment Variables**
+### Invitations
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/invitations` | List all invitations with analytics |
+| `POST` | `/api/invitations` | Create a new invitation record |
+| `GET` | `/api/invitations/[id]` | Get a single invitation with full logs |
+| `DELETE` | `/api/invitations/[id]` | Delete an invitation and its logs |
 
-Add these in Vercel Dashboard → Settings → Environment Variables:
+### Sending & Messaging
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/api/send-bulk-email` | Send email to selected recipients via Gmail SMTP |
+| `POST` | `/api/send-bulk-email-enhanced` | Enhanced bulk email with analytics logging |
+| `POST` | `/api/send-combo-bulk` | Send email + SMS + WhatsApp simultaneously |
+| `POST` | `/api/retry-failed-emails` | Retry all failed emails for an invitation |
+| `POST` | `/api/send-phone-sms` | Send SMS via HttpSms provider |
+| `POST` | `/api/send-whatsapp-web` | Send WhatsApp message via Twilio |
+| `POST` | `/api/test-email` | Send a single test email |
+| `POST` | `/api/test-phone-sms` | Send a single test SMS |
 
-```
-DATABASE_URL=your_neon_database_url
-GEMINI_API_KEY=your_gemini_api_key
-SENDGRID_API_KEY=your_sendgrid_api_key
-SENDGRID_FROM_EMAIL=your_verified_email
-HTTPSMS_API_KEY=your_httpsms_key
-HTTPSMS_PHONE_ID=your_phone_number
-ADMIN_EMAIL=your_admin_email
-ADMIN_PASSWORD=your_admin_password
-NEXTAUTH_SECRET=your_32_char_secret
-NEXTAUTH_URL=https://your-domain.vercel.app
-```
+### AI Generation
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/api/generate-invitation` | Generate HTML invitation content using Gemini AI |
+| `POST` | `/api/generate-sms` | Generate SMS message text using Gemini AI |
+| `POST` | `/api/generate-whatsapp` | Generate WhatsApp message using Gemini AI |
 
-#### **Step 4: Deploy**
-
-- Click **Deploy**
-- Wait for build completion
-- Visit your live application!
-
-### **Build Locally**
-
-```
-# Build for production
-npm run build
-
-# Test production build locally
-npm run start
-```
+### Templates
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/sms-templates` | List pre-built SMS templates |
+| `GET` | `/api/whatsapp-templates` | List pre-built WhatsApp templates |
 
 ---
 
-## 🔧 Troubleshooting
+## 🖥️ Pages & UI
 
-### **Common Issues & Solutions:**
+| Route | Access | Description |
+|-------|--------|-------------|
+| `/` | Public | Self-registration portal for students, guests, and professors |
+| `/dashboard` | Admin only | Overview stats (total students, invitations, emails sent) + quick-action links |
+| `/students` | Admin only | Full CRUD table for students; CSV import; search & pagination |
+| `/guests` | Admin only | Full CRUD table for guests; CSV import; category filter |
+| `/professors` | Admin only | Full CRUD table for professors; search & pagination |
+| `/compose` | Admin only | Multi-step invitation composer: write content → select recipients → choose channels → send |
+| `/invitations` | Admin only | History of all invitations, with per-invitation analytics cards |
+| `/invitations/[id]` | Admin only | Detailed logs for a single invitation (email, SMS, WhatsApp tabs) |
+| `/email-test` | Admin only | Test email delivery functionality |
 
-<details>
-<summary><strong>Database Connection Issues</strong></summary>
+### Navigation Bar Items
+1. **Home** (`/`) — Registration portal
+2. **Dashboard** (`/dashboard`) — Admin overview
+3. **Students** (`/students`)
+4. **Guests** (`/guests`)
+5. **Professors** (`/professors`)
+6. **Compose** (`/compose`) — Create & send invitations
+7. **Analytics** (`/invitations`) — Invitation history & tracking
 
+---
+
+## 🔑 Environment Variables
+
+Create a `.env` file in the project root (never commit this file):
+
+```env
+# ── Database ──────────────────────────────────────────────────────
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
+
+# ── Admin Auth ────────────────────────────────────────────────────
+NEXTAUTH_SECRET="your-secret-key"
+ADMIN_PASSWORD="your-admin-password"
+
+# ── Gmail (Nodemailer) ───────────────────────────────────────────
+GMAIL_USER="your-email@gmail.com"
+GMAIL_APP_PASSWORD="your-16-digit-app-password"
+
+# ── HttpSms (Alternative SMS) ────────────────────────────────────
+HTTPSMS_API_KEY="uk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+HTTPSMS_PHONE_ID="+1234567890"
+
+# ── Google Gemini AI ─────────────────────────────────────────────
+GEMINI_API_KEY="AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
-# Verify DATABASE_URL format
-DATABASE_URL="postgresql://user:pass@host:5432/dbname?sslmode=require"
 
-# Test connection
-npx prisma db push
+> **Security Note:** The `.env` file contains secret credentials. It is listed in `.gitignore`. Never push API keys to a public repository.
 
-# Reset database if corrupted
-npx prisma migrate reset
+---
+
+## ⚙️ Installation & Setup
+
+### Prerequisites
+- **Node.js** v20 or higher
+- **npm** v9 or higher
+- A **PostgreSQL** database (e.g., [Neon](https://neon.tech) free tier)
+- A **Gmail** account with an App Password generated
+
+- A **Google AI Studio** API key (for Gemini AI features)
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/your-username/college-invitation-system.git
+cd college-invitation-system
 ```
-</details>
 
-<details>
-<summary><strong>Gemini AI Not Working</strong></summary>
-
-```
-# Verify API key format (should start with "AIza")
-# Check Google AI Studio quotas
-# Ensure billing is enabled for production usage
-# Test with: curl -H "Authorization: Bearer $GEMINI_API_KEY" https://ai.google.dev/
-```
-</details>
-
-<details>
-<summary><strong>SendGrid Email Issues</strong></summary>
-
-```
-# Verify API key starts with "SG."
-# Check sender email is verified in SendGrid
-# Ensure domain authentication is complete
-# Test SMTP connectivity on port 587
-```
-</details>
-
-<details>
-<summary><strong>httpSMS Not Working</strong></summary>
-
-```
-# Ensure httpSMS app is running on Android phone
-# Check phone has internet connection
-# Verify API key format (starts with "httpsms_")
-# Confirm phone number format (+countrycode+number)
-```
-</details>
-
-<details>
-<summary><strong>Build/Deploy Issues</strong></summary>
-
-```
-# Clear Next.js cache
-rm -rf .next
-
-# Reinstall dependencies
-rm -rf node_modules package-lock.json
+### 2. Install Dependencies
+```bash
 npm install
-
-# Check TypeScript errors
-npm run type-check
-
-# Verify environment variables are set
 ```
-</details>
+
+### 3. Configure Environment Variables
+Create a `.env` file in the root directory and fill in all required values (see [Environment Variables](#-environment-variables) above).
+
+### 4. Set Up the Database
+Push the Prisma schema to your PostgreSQL database:
+```bash
+npx prisma db push
+```
+
+Or run migrations (if using migration history):
+```bash
+npx prisma migrate deploy
+```
+
+### 5. Generate the Prisma Client
+```bash
+npx prisma generate
+```
+
+### 6. (Optional) Open Prisma Studio
+Browse your database visually:
+```bash
+npx prisma studio
+```
+
+---
+
+## ▶️ Running Locally
+
+Start the development server with Turbopack:
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Other Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| Development | `npm run dev` | Start dev server with Turbopack hot reload |
+| Build | `npm run build` | Create optimized production build |
+| Start (prod) | `npm start` | Start production server |
+| Lint | `npm run lint` | Run ESLint checks |
+| DB Push | `npx prisma db push` | Sync schema to database without migrations |
+| DB Migrate | `npx prisma migrate dev` | Create & apply a new migration |
+| Studio | `npx prisma studio` | Open Prisma's visual DB browser |
+
+---
+
+## 🚢 Deployment (Vercel)
+
+The project is configured for one-click Vercel deployment.
+
+### Steps
+1. Push your code to a GitHub repository.
+2. Go to [vercel.com](https://vercel.com) → **New Project** → Import from GitHub.
+3. Set all environment variables in the Vercel dashboard (Settings → Environment Variables).
+4. Vercel will auto-detect Next.js and build the project.
+5. Run `npx prisma db push` against your production database URL once.
+
+### Vercel Config (`vercel.json`)
+```json
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
+}
+```
+All API route functions are given a **30-second** maximum execution duration (important for bulk sending operations that may take longer than the default 10s).
+
+### Next.js Build Config (`next.config.ts`)
+```ts
+const nextConfig = {
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
+  output: 'standalone'
+}
+```
+- `output: 'standalone'` — Produces a minimal standalone bundle for efficient Vercel deployment.
+- `ignoreDuringBuilds` / `ignoreBuildErrors` — Bypass non-critical lint/type errors during CI builds.
+
+---
+
+## 📡 Communication Channels
+
+### Email (Gmail via Nodemailer)
+- Uses the `nodemailer` npm package.
+- Supports bulk email sending (iterates efficiently through recipients).
+- HTML content with `{{name}}` placeholder auto-substituted per recipient.
+- Plain-text version auto-generated by stripping HTML tags.
+- The helper functions live in `src/lib/email.ts`:
+  - `sendBulkEmails(emails, subject, content)` — Send to multiple recipients
+  - `sendSingleEmail(to, subject, content, name)` — Send to one recipient
+  - `sendTestEmail(to, name)` — Send a preconfigured test email
+
+### SMS
+- HttpSms is supported as a provider via its REST API.
+
+### WhatsApp
+- Generates WhatsApp Web links for manual sending via WhatsApp or WhatsApp Desktop.
+- Opens `whatsapp://send` links to trigger message directly.
+
+### AI Content Generation (Google Gemini)
+- Uses `@google/generative-ai` package.
+- `/api/generate-invitation` — Generates full HTML email invitation content.
+- `/api/generate-sms` — Generates concise SMS text.
+- `/api/generate-whatsapp` — Generates WhatsApp-formatted message text.
+
+---
+
+## 🔐 Admin System
+
+### How It Works
+1. The home page (`/`) shows an **Admin Login** button in the header.
+2. Clicking it opens a password modal.
+3. On submit, the frontend calls `POST /api/admin/login` with the password.
+4. The API compares against the `ADMIN_PASSWORD` environment variable.
+5. On success, a token is returned and stored in `localStorage` as `admin-token`.
+6. The `useAuth` hook reads this token on every page load to determine admin state.
+7. The `AdminProtection` component wraps all admin-only pages; if no token is found, the user is redirected.
+8. Admins can log out via the **Logout** button in the header, which clears the `admin-token`.
+
+### Admin-Only Routes
+- `/dashboard`
+- `/students`
+- `/guests`
+- `/professors`
+- `/compose`
+- `/invitations`
+- `/invitations/[id]`
+- `/email-test`
+
+---
+
+## 📂 CSV Import
+
+The system supports bulk import via `.csv` files for Guests (and Students).
+
+### Guest CSV Format
+```csv
+name,email,organization,designation,phone,category
+John Smith,john.smith@company.com,Tech Corp,CEO,1234567890,vip
+Jane Doe,jane.doe@startup.com,StartupXYZ,CTO,0987654321,industry
+Dr. Mike Johnson,mike@university.edu,State University,Professor,5551234567,alumni
+Sarah Wilson,sarah@media.com,News Channel,Reporter,4449876543,media
+```
+
+A sample file is available at: `public/sample_guests.csv`
+
+### Supported Guest Categories
+`guest` | `vip` | `alumni` | `industry` | `media` | `sponsor` | `speaker`
+
+---
+
+## 🤖 AI-Powered Features
+
+The system integrates **Google Gemini AI** to help admins quickly draft professional invitation content.
+
+### How to Use
+In the **Compose** page:
+1. Click the **✨ Generate with AI** button.
+2. Describe the event (e.g., "Annual Techfest 2025, Department of Computer Science, 15th March").
+3. The AI generates a complete, professional HTML invitation.
+4. Edit as needed, then send.
+
+The same workflow applies to SMS and WhatsApp message drafting.
+
+---
+
+## 🗺️ Flowcharts
+
+The repository includes Mermaid-format flowcharts describing the system architecture and invitation dispatch flow:
+
+- `flowchart.mermaid` — Primary system flowchart
+- `flowchart-raw.mmd` — Raw source
+- `flowchart.png` — Rendered PNG
+- `flowchart.svg` — Rendered SVG
+- `college-inivitation-flowchart _ Mermaid Chart-2025-09-25-203616.png` — Annotated export
+
+---
+
+## 🗂️ Key TypeScript Types (`src/lib/types.ts`)
+
+```ts
+interface Student { id, name, email, phone?, course, year, createdAt }
+interface Guest { id, name, email, phone?, organization, designation, createdAt }
+interface Professor { id, name, email, phone?, college, department, createdAt }
+
+interface Invitation {
+  id, title, subject, content, createdAt, sentCount
+  emailLogs: EmailLog[]
+  smsLogs: SmsLog[]
+  whatsappLogs: WhatsappLog[]
+  analytics?: { totalSent, delivered, opened, clicked, failed, pending, deliveryRate, openRate }
+}
+
+interface EmailLog { id, status, sentAt, deliveredAt?, openedAt?, clickedAt?, errorMessage?, messageId?, student?, guest?, professor? }
+interface SmsLog { id, status, sentAt, deliveredAt?, errorMessage?, messageId?, phoneNumber, student?, guest?, professor? }
+interface WhatsappLog { id, status, sentAt, deliveredAt?, readAt?, errorMessage?, messageId?, phoneNumber, student?, guest?, professor? }
+
+interface ApiResponse<T> { success: boolean, message: string, data?: T, error?: string }
+interface InvitationFormData { title, subject, content, recipients: { students: string[], guests: string[], professors: string[] } }
+interface MessageStatus { id, status: 'pending'|'sent'|'delivered'|'opened'|'clicked'|'failed', timestamp, error? }
+```
+
+---
+
+## 📦 Dependencies
+
+### Production
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `next` | ^16.1.4 | React framework (App Router) |
+| `react` | ^19.2.3 | UI library |
+| `react-dom` | ^19.2.3 | DOM renderer |
+| `@prisma/client` | ^6.16.2 | Database ORM client |
+| `nodemailer` | ^6.9.0 | Email delivery |
+
+| `@google/generative-ai` | ^0.24.1 | Gemini AI content generation |
+| `lucide-react` | ^0.544.0 | Icon library |
+| `react-icons` | ^5.5.0 | Additional icon sets |
+
+### Development
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `prisma` | ^6.16.2 | ORM CLI & migrations |
+| `typescript` | ^5.9.2 | Type safety |
+| `@types/nodemailer` | ^6.4.17 | TypeScript types |
+| `tailwindcss` | ^4 | Utility-first CSS |
+| `@tailwindcss/postcss` | ^4 | PostCSS integration |
+| `eslint` | ^9 | Linting |
+| `eslint-config-next` | 15.5.3 | Next.js ESLint rules |
+
+---
+
+## 🔒 Security Notes
+
+1. **Never commit `.env`** — It contains live API keys, database credentials, and the admin password. The `.gitignore` already excludes it.
+2. **Admin password** is stored as a plain environment variable (`ADMIN_PASSWORD`). Consider hashing with bcrypt for production upgrades.
+3. **JWT tokens** are stored in localStorage — suitable for low-security internal tools; upgrade to httpOnly cookies for higher-security scenarios.
+4. **API routes** don't perform server-side auth checks on most endpoints — the admin protection is client-side only. Consider adding middleware for production hardening.
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these guidelines:
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Commit your changes: `git commit -m "feat: add your feature"`
+4. Push to the branch: `git push origin feature/your-feature-name`
+5. Open a Pull Request.
 
-### **Development Workflow:**
+---
 
-1. **Fork** the repository
-2. **Create** feature branch: `git checkout -b feature/amazing-feature`
-3. **Make** your changes with proper TypeScript types
-4. **Test** thoroughly in development mode
-5. **Commit** with clear message: `git commit -m 'Add amazing feature'`
-6. **Push** to branch: `git push origin feature/amazing-feature`
-7. **Create** Pull Request with detailed description
+## 📄 License
 
-### **Code Standards:**
+This project is private and proprietary. All rights reserved.
 
-- ✅ Use TypeScript for all new code
-- ✅ Follow existing code style and naming conventions
-- ✅ Add JSDoc comments for complex functions
-- ✅ Ensure responsive design for new UI components
-- ✅ Test with different user roles and permissions
-- ✅ Update documentation if adding new features
+---
 
-### **Pull Request Template:**
+## 🥇 Option 1 — Gmail + Nodemailer (FREE, Direct apni email se)
 
-```
-## Description
-Brief description of changes
+Sabse best tere case ke liye — **seedha apni Gmail se emails jaayengi!** [dev](https://dev.to/emmanuel_xs/how-to-send-emails-for-free-in-nextjs-using-gmail-and-nodemailer-4i6e)
 
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature  
-- [ ] Breaking change
-- [ ] Documentation update
+### Setup karo:
 
-## Testing
-- [ ] Tested locally
-- [ ] All existing tests pass
-- [ ] Added new tests if applicable
+**Step 1 — Gmail App Password banao**
+1. [myaccount.google.com/security](https://myaccount.google.com/security) pe jaao
+2. **2-Step Verification** enable karo (agar nahi hai toh)
+3. Phir [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) pe jaao
+4. App name likho: `college-invitation` → **Create** karo
+5. **16 character password** milega → copy karo [weblianz](https://weblianz.com/blog/securely-send-emails-in-nextjs-with-gmail-smtp)
 
-## Screenshots (if applicable)
-Add screenshots of UI changes
+**Step 2 — Install Nodemailer**
+```bash
+npm install nodemailer
+npm install @types/nodemailer
 ```
 
----
-
-## 📊 Performance & Analytics
-
-### **System Metrics:**
-
-| **Metric** | **Value** | **Target** |
-|:-----------|:---------:|:----------:|
-| **Page Load Speed** | <2s | <3s |
-| **API Response Time** | <500ms | <1s |
-| **Database Queries** | Optimized | <100ms |
-| **Build Size** | <2MB | <5MB |
-| **Lighthouse Score** | 95+ | 90+ |
-| **TypeScript Coverage** | 100% | 95%+ |
-
-### **Monitoring & Logging:**
-
-- **Error Tracking:** Built-in error boundaries
-- **Performance:** Next.js Analytics
-- **Database:** Prisma query logging
-- **Email:** SendGrid delivery analytics
-- **SMS:** httpSMS delivery status
-
----
-
-## 📄 License & Legal
-
-### **MIT License**
-
-```
-MIT License
-
-Copyright (c) 2025 Rohit Yadav
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+**Step 3 — `.env` mein add karo**
+```env
+GMAIL_USER="tumharagmail@gmail.com"
+GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"   # 16 char wala
 ```
 
-### **Privacy & Data Protection**
+**Step 4 — `src/lib/email.ts` replace karo** [sendlayer](https://sendlayer.com/blog/how-to-send-emails-in-next-js-via-smtp-with-nodemailer/)
+```typescript
+import nodemailer from "nodemailer";
 
-This system handles personal information (emails, phone numbers). Ensure compliance with:
-- **GDPR** (European Union)
-- **CCPA** (California)
-- **Local privacy laws** in your jurisdiction
-- Implement proper data encryption and secure storage
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
----
+export async function sendBulkEmails(
+  emails: { to: string; name: string }[],
+  subject: string,
+  htmlContent: string
+) {
+  const results = [];
+  for (const recipient of emails) {
+    const personalizedHtml = htmlContent.replace(/{{name}}/g, recipient.name);
+    try {
+      await transporter.sendMail({
+        from: `"College Invitation" <${process.env.GMAIL_USER}>`,
+        to: recipient.to,
+        subject,
+        html: personalizedHtml,
+      });
+      results.push({ email: recipient.to, status: "sent" });
+    } catch (error) {
+      results.push({ email: recipient.to, status: "failed", error });
+    }
+  }
+  return results;
+}
 
-## 👤 Author & Support
+export async function sendSingleEmail(
+  to: string, subject: string, html: string, name: string
+) {
+  const personalizedHtml = html.replace(/{{name}}/g, name);
+  return transporter.sendMail({
+    from: `"College Invitation" <${process.env.GMAIL_USER}>`,
+    to,
+    subject,
+    html: personalizedHtml,
+  });
+}
+```
 
-<div align="center">
+> ✅ **Gmail free limit:** 500 emails/day — college project ke liye more than enough! [dev](https://dev.to/emmanuel_xs/how-to-send-emails-for-free-in-nextjs-using-gmail-and-nodemailer-4i6e)
 
-### **Rohit Yadav**
-*Full-Stack Developer | AI Enthusiast | Education Technology*
+***
 
-[![GitHub](https://img.shields.io/badge/GitHub-rohityadav--alpha-black?style=for-the-badge&logo=github)](https://github.com/rohityadav-alpha)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/rohit-yadav-dev)
-[![Email](https://img.shields.io/badge/Email-Contact-red?style=for-the-badge&logo=gmail)](mailto:rohityadav.dev@gmail.com)
 
-</div>
-
-### **Getting Help:**
-
-- 🐛 **Bug Reports:** [Create an Issue](https://github.com/rohityadav-alpha/college-invitation-system/issues)
-- 💡 **Feature Requests:** [Discussions](https://github.com/rohityadav-alpha/college-invitation-system/discussions)
-- 📧 **Direct Support:** rohityadav.dev@gmail.com
-- 📚 **Documentation:** This README + inline code comments
-
----
-
-## 🙏 Acknowledgments
-
-Special thanks to the incredible open-source community:
-
-- 🚀 **Next.js Team** - For the amazing React framework
-- 🤖 **Google AI** - For Gemini API and AI capabilities
-- 🎨 **Tailwind CSS** - For the utility-first CSS framework
-- 🗄️ **Prisma Team** - For the fantastic database toolkit
-- 💙 **TypeScript** - For type-safe JavaScript development
-- 📧 **SendGrid** - For reliable email delivery service
-- 📱 **httpSMS** - For SMS integration capabilities
-- 🌟 **Open Source Community** - For continuous inspiration and support
-
-### **Third-Party Services:**
-
-- **Neon** - Serverless PostgreSQL database
-- **Vercel** - Deployment and hosting platform
-- **Google AI** - Gemini AI for content generation
-- **SendGrid** - Email delivery service
-- **httpSMS** - SMS gateway service
-
----
-
-<div align="center">
-
-## ⭐ Show Your Support
-
-**If this project helped you or your institution, please consider giving it a ⭐!**
-
-[![GitHub stars](https://img.shields.io/github/stars/rohityadav-alpha/college-invitation-system?style=social)](https://github.com/rohityadav-alpha/college-invitation-system/stargazers)
-
-**Built with ❤️ for educational institutions worldwide**
-
----
-
-### 🚀 Ready to Transform Your College Communication?
-
-<p align="center">
-  <a href="#-quick-start" style="text-decoration: none;">
-    <img src="https://img.shields.io/badge/Get%20Started-Now-success?style=for-the-badge&logo=rocket" alt="Get Started">
-  </a>
-  <a href="https://college-invitation-system.vercel.app" style="text-decoration: none;">
-    <img src="https://img.shields.io/badge/View%20Live%20Demo-blue?style=for-the-badge&logo=vercel" alt="Live Demo">
-  </a>
-</p>
-
-**Transform the way your institution communicates. Start today!**
-
-</div>
+*Built with ❤️ by Rohit Yadav*
