@@ -1,10 +1,10 @@
-# 🎓 College Invitation System
+#  College Invitation System
 
 A full-stack, multi-channel event invitation management platform built for colleges and institutions. Manage students, guests, and professors — then send personalized invitations via **Email**, **SMS**, and **WhatsApp** — all from one place.
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 
 - [Overview](#-overview)
 - [Live Demo](#-live-demo)
@@ -27,7 +27,7 @@ A full-stack, multi-channel event invitation management platform built for colle
 
 ---
 
-## 🌟 Overview
+## Overview
 
 The **College Invitation System** is a Next.js 16 web application designed to streamline the process of inviting attendees to college events (seminars, workshops, cultural programs, convocations, etc.).
 
@@ -40,15 +40,15 @@ Admins can compose rich HTML invitations, select recipients, and dispatch them s
 
 ---
 
-## 🚀 Live Demo
+##  Live Demo
 
 > Deployed on **Vercel** with **Neon PostgreSQL** as the database.
 
 ---
 
-## ✨ Features
+##  Features
 
-### 👥 Recipient Management
+###  Recipient Management
 - **Student Registration** — Register with name, email, course, year, and optional phone number
 - **Guest Registration** — Register with name, email, organization, designation, phone, and category (guest / VIP / alumni / industry / media / sponsor / speaker)
 - **Professor Registration** — Register with name, email, college, department, designation, phone, and area of expertise
@@ -57,22 +57,22 @@ Admins can compose rich HTML invitations, select recipients, and dispatch them s
 - **Search & Filter** — Search recipients by name, email, course, organization, etc.
 - **Pagination** — Server-side paginated list views
 
-### ✉️ Multi-Channel Messaging
+###  Multi-Channel Messaging
 | Channel | Provider | Status Tracking |
 |---------|----------|-----------------|
-| Email | Gmail (Nodemailer) | ✅ sent / failed |
-| SMS | Twilio | ✅ sent / delivered / failed |
-| SMS (alt) | HttpSms | ✅ sent / failed |
-| WhatsApp | Twilio | ✅ sent / delivered / read / failed |
+| Email | Gmail (Nodemailer) |  sent / failed |
+| SMS | Twilio |  sent / delivered / failed |
+| SMS (alt) | HttpSms |  sent / failed |
+| WhatsApp | Twilio |  sent / delivered / read / failed |
 
-### 📝 Invitation Composer
+###  Invitation Composer
 - Rich HTML invitation editor
 - `{{name}}` personalization placeholder (auto-replaced with each recipient's name)
 - Select recipients from students, guests, and/or professors
 - Send to one or all categories simultaneously
 - **AI-powered invitation generation** using Google Gemini API
 
-### 📊 Analytics & Logs
+###  Analytics & Logs
 - Per-invitation analytics: total sent, delivered, opened, clicked, failed, pending
 - Email logs with timestamps (sentAt, deliveredAt, openedAt, clickedAt)
 - SMS logs with sentAt and deliveredAt timestamps
@@ -86,7 +86,7 @@ Admins can compose rich HTML invitations, select recipients, and dispatch them s
 - Admin-only routes protected by `AdminProtection` component
 - Admin can view/manage all data; regular users can only self-register
 
-### 📱 Responsive UI
+###  Responsive UI
 - Mobile-first, fully responsive design
 - Sticky navigation with mobile hamburger menu
 - Active-link highlighting in the navbar
@@ -206,7 +206,7 @@ college-invitation-system/
 
 ---
 
-## 🗃️ Database Schema
+##  Database Schema
 
 The PostgreSQL database is managed via **Prisma ORM**. The schema lives in `prisma/schema.prisma`.
 
@@ -488,7 +488,7 @@ npx prisma studio
 
 ---
 
-## ▶️ Running Locally
+##  Running Locally
 
 Start the development server with Turbopack:
 ```bash
@@ -511,7 +511,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🚢 Deployment (Vercel)
+##  Deployment (Vercel)
 
 The project is configured for one-click Vercel deployment.
 
@@ -547,7 +547,7 @@ const nextConfig = {
 
 ---
 
-## 📡 Communication Channels
+##  Communication Channels
 
 ### Email (Gmail via Nodemailer)
 - Uses the `nodemailer` npm package.
@@ -598,7 +598,7 @@ const nextConfig = {
 
 ---
 
-## 📂 CSV Import
+##  CSV Import
 
 The system supports bulk import via `.csv` files for Guests (and Students).
 
@@ -633,7 +633,7 @@ The same workflow applies to SMS and WhatsApp message drafting.
 
 ---
 
-## 🗺️ Flowcharts
+##  Flowcharts
 
 The repository includes Mermaid-format flowcharts describing the system architecture and invitation dispatch flow:
 
@@ -645,7 +645,7 @@ The repository includes Mermaid-format flowcharts describing the system architec
 
 ---
 
-## 🗂️ Key TypeScript Types (`src/lib/types.ts`)
+##  Key TypeScript Types (`src/lib/types.ts`)
 
 ```ts
 interface Student { id, name, email, phone?, course, year, createdAt }
@@ -671,7 +671,7 @@ interface MessageStatus { id, status: 'pending'|'sent'|'delivered'|'opened'|'cli
 
 ---
 
-## 📦 Dependencies
+##  Dependencies
 
 ### Production
 | Package | Version | Purpose |
@@ -708,7 +708,7 @@ interface MessageStatus { id, status: 'pending'|'sent'|'delivered'|'opened'|'cli
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository.
 2. Create a feature branch: `git checkout -b feature/your-feature-name`
@@ -718,7 +718,7 @@ interface MessageStatus { id, status: 'pending'|'sent'|'delivered'|'opened'|'cli
 
 ---
 
-## 📄 License
+##  License
 
 This project is private and proprietary. All rights reserved.
 
@@ -799,7 +799,7 @@ export async function sendSingleEmail(
 }
 ```
 
-> ✅ **Gmail free limit:** 500 emails/day — college project ke liye more than enough! [dev](https://dev.to/emmanuel_xs/how-to-send-emails-for-free-in-nextjs-using-gmail-and-nodemailer-4i6e)
+>  **Gmail free limit:** 500 emails/day — college project ke liye more than enough! [dev](https://dev.to/emmanuel_xs/how-to-send-emails-for-free-in-nextjs-using-gmail-and-nodemailer-4i6e)
 
 ***
 
